@@ -1,13 +1,19 @@
+import { apiReference } from "@scalar/hono-api-reference";
 import { serve, type ServerWebSocket } from "bun";
 import { Hono } from "hono";
-import { apiReference } from "@scalar/hono-api-reference";
-import { openAPISpecs, describeRoute } from "hono-openapi";
-import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { describeRoute, openAPISpecs } from "hono-openapi";
+import { resolver, validator } from "hono-openapi/valibot";
+import * as v from 'valibot';
 import log from "./log";
+import { cli } from "winston/lib/winston/config";
 
 const httpPort = 8080;
 const app = new Hono();
+
+interface ChatMessage {
+    from: string;
+    message: string;
+}
 
 //  --------------------------------------------------------
 //  Sockets
@@ -15,23 +21,50 @@ const app = new Hono();
 type WSocket = ServerWebSocket<unknown>;
 type WMessage = string | Buffer;
 
-const clients = new Set<WSocket>();
+interface ChatUser {
+    id: string;
+    name: string;
+    socket: WSocket;
+}
+
+const clients = new Map<string, ChatUser>();
 
 const onConnect = (ws: WSocket) => {
-    clients.add(ws);
-    log.info(`User connected: ${ws.remoteAddress}. (${clients.size})`);
+    const id = crypto.randomUUID();
+    const cu: ChatUser = {
+        id: id,
+        name: `slop${id.substring(0, 6)}`,
+        socket: ws
+    };
+    clients.set(id, cu);
+    log.info(`User connected: ${cu.name}. (${clients.size})`);
 }
 
 const onDisconnect = (ws: WSocket) => {
-    log.info(`User disconnected: ${ws.remoteAddress}`);
-    clients.delete(ws);
+    for (const { id, name, socket } of clients.values()) {
+        if (socket === ws) {
+            log.info(`User disconnected: ${name} (${clients.size})`);
+            clients.delete(id);
+        }
+    }
 }
 
 const onMessage = async (ws: WSocket, message: WMessage) => {
-    log.debug(`Message recieved: ${ws.remoteAddress} ${message}`);
+    let fromName: string;
+    for (const { id, name, socket } of clients.values()) {
+        if (ws === socket) {
+            fromName = clients.get(id)!.name;
+            log.debug(`${name} sent "${message}"`);
+        }
+    }
 
-    for (const client of clients) {
-        client.send(`Pong: ${message}`);
+    const rp: ChatMessage = {
+        from: fromName!,
+        message: `${message}`
+    }
+
+    for (const { socket } of clients.values()) {
+        socket.send(JSON.stringify(rp));
     }
 }
 
@@ -40,13 +73,6 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
 //  --------------------------------------------------------
 
 //  Docs and status 
-
-const documentSuccessOrFailForType = (obj: z.AnyZodObject): any => {
-    return {
-        200: { description: "Success", content: { 'application/json': { schema: (zodToJsonSchema(obj) as any) } } },
-        500: { description: "Error" }
-    }
-}
 
 app.get('/openapi', openAPISpecs(app, {
     documentation: {
@@ -68,28 +94,48 @@ app.onError((err, c) => {
     return c.json({ message: err.message, cause: err.cause, stack: err.stack });
 });
 
-const StatusResponse = z.object({
-    clients: z.number().describe("Number of connected clients")
-});
+const StatusResponse = v.object({
+    clients: v.number()
+})
 
 app.get("/status",
     describeRoute({
         description: "Server status",
-        responses: documentSuccessOrFailForType(StatusResponse)
+        responses: {
+            200: { description: "Success", content: { 'application/json': { schema: resolver(StatusResponse) } } }
+        }
     }),
     async (c) => {
-        log.debug("Status OK");
-        const resp: z.infer<typeof StatusResponse> = {
+        return c.json({
             clients: clients.size
-        };
-        return c.json(resp);
+        });
     }
 );
 
-app.get('/chat/:id', async (c) => {
-    const id = c.req.param("id");
-    return c.json({ id: id });
+const ChatInfoRequest = v.object({
+    id: v.string()
 });
+
+const ChatInfoResponse = v.object({
+    id: v.string()
+});
+
+app.get('/chat/:id',
+    describeRoute({
+        description: "Returns info about the chat ID",
+        responses: {
+            200: { description: "Success", content: { 'application/json': { schema: resolver(ChatInfoResponse) } } }
+        }
+    }),
+    validator('param', ChatInfoRequest),
+    async (c) => {
+        const id = c.req.param("id");
+
+        return c.json({
+            id: id
+        });
+    }
+);
 
 app.get("/",
     (c) => {

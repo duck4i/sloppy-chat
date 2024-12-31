@@ -42,13 +42,14 @@
         }
 
         .received {
-            background: #e5e5ea;
+            background: #111;
+            color: white;
             float: left;
             border-bottom-left-radius: 5px;
         }
 
         .sent {
-            background: #0b93f6;
+            background: #222;
             color: white;
             float: right;
             border-bottom-right-radius: 5px;
@@ -74,14 +75,16 @@
         #input {
             flex: 1;
             padding: 12px;
-            border: 1px solid #ddd;
+            color: white;
+            border: 1px solid #222;
+            background-color: #333;
             border-radius: 20px;
             outline: none;
             font-size: 16px;
         }
 
         button {
-            background: #0b93f6;
+            background: #222;
             color: white;
             border: none;
             padding: 0 20px;
@@ -92,7 +95,7 @@
         }
 
         button:hover {
-            background: #0a84e0;
+            background: #111;
         }
     </style>
 </head>
@@ -109,39 +112,72 @@
     </div>
 
     <script>
-        
-        const socket = new WebSocket(`ws://localhost:8080`);
 
-        socket.onopen = () => {
-            console.log("Connection established");
-            addMessage("Connected to chat", "received");
+        let socket = null;
+
+        function connect() {
+
+            const reconnectInterval = 1000;
+            const reconnectHandle = -1;
+
+            let connected = false;
+            socket = new WebSocket(`ws://localhost:8080`);
+
+            socket.onopen = () => {
+                console.log("Connection established");
+                addMessage("Connected to chat", "received");
+                connected = true;
+            }
+
+            socket.onclose = () => {
+                console.log("Connection closed");
+
+                if (connected)
+                    addMessage("Disconnected from chat", "received");
+
+                connected = false;
+                clearTimeout(reconnectHandle);
+                reconnectHandle = setTimeout(() => {
+                    connect();
+                }, reconnectInterval);
+            }
+
+            socket.onerror = (err) => {
+                console.log("Error", err);
+            }
+
+            // Listen for messages from the server
+            socket.onmessage = function (event) {
+                const js = JSON.parse(event.data);
+                const from = js['from'];
+                const msg = js['message'];
+                addMessage(msg, "received", from);
+            };
         }
 
-        socket.onclose = () => {
-            console.log("Connection closed");
-            addMessage("Disconnected from chat", "received");
-        }
+        connect();
 
-        socket.onerror = (err) => {
-            console.log("Error", err);
-            addMessage("Error connecting to chat", "received");
-        }
-
-        function addMessage(text, type) {
+        function addMessage(text, type, from) {
             const item = document.createElement('li');
-            item.textContent = text;
             item.className = `message ${type}`;
+
+            if (from === undefined) {
+                item.textContent = text;
+            } else {
+                item.innerHTML = `
+                    <div>
+                        <div><b>${from}</b> </div>
+                        <div>${text}</div>
+                    </div>
+                    `
+            }
+
             document.getElementById('messages').appendChild(item);
 
             // Scroll to bottom
             const container = document.getElementById('chat-container');
             container.scrollTop = container.scrollHeight;
         }
-
-        // Listen for messages from the server
-        socket.onmessage = function (event) {
-            addMessage(event.data, "received");
-        };
 
         // Send message on form submit
         document.getElementById('form').onsubmit = function (e) {
