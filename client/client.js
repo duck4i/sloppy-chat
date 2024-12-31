@@ -51,6 +51,7 @@ class Client {
         const msg = data;
         console.debug("Chat message recieved from.", msg.userName);
         if (this.messageCallback) {
+          this.messageCallback(msg.userName, msg.message);
         }
         return;
       }

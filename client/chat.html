@@ -122,6 +122,7 @@
     <script>
 
         const chatClient = new Client("ws://localhost:8080");
+        chatClient.connect();
 
         chatClient.onConnected((name) => {
             console.log("CLIENT - got name", name);
@@ -159,8 +160,6 @@
             const container = document.getElementById('chat-container');
             container.scrollTop = container.scrollHeight;
         }
-
-        chatClient.connect();
 
         // Send message on form submit
         document.getElementById('form').onsubmit = function (e) {
