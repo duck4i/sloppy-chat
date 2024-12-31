@@ -9,6 +9,6 @@ bun install
 To run:
 
 ```bash
-bun run index.ts
+bun run server/server.ts
 ```
 
