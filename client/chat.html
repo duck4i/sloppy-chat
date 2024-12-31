@@ -48,6 +48,13 @@
             border-bottom-left-radius: 5px;
         }
 
+        .system {
+            background: #444;
+            color: white;
+            width: 100%;
+            max-width: 100%;
+        }
+
         .sent {
             background: #222;
             color: white;
@@ -101,6 +108,7 @@
 </head>
 
 <body>
+    <script src="./client.js"></script>
     <div id="chat-container">
         <ul id="messages"></ul>
     </div>
@@ -113,49 +121,22 @@
 
     <script>
 
-        let socket = null;
+        const chatClient = new Client("ws://localhost:8080");
 
-        function connect() {
+        chatClient.onConnected((name) => {
+            console.log("CLIENT - got name", name);
+            addMessage("Connected...", "system")
+        });
 
-            const reconnectInterval = 1000;
-            const reconnectHandle = -1;
+        chatClient.onDisconnected(() => {
+            console.log("CLIENT - close");
+            addMessage("Disconnected.", "system")
+        });
 
-            let connected = false;
-            socket = new WebSocket(`ws://localhost:8080`);
-
-            socket.onopen = () => {
-                console.log("Connection established");
-                addMessage("Connected to chat", "received");
-                connected = true;
-            }
-
-            socket.onclose = () => {
-                console.log("Connection closed");
-
-                if (connected)
-                    addMessage("Disconnected from chat", "received");
-
-                connected = false;
-                clearTimeout(reconnectHandle);
-                reconnectHandle = setTimeout(() => {
-                    connect();
-                }, reconnectInterval);
-            }
-
-            socket.onerror = (err) => {
-                console.log("Error", err);
-            }
-
-            // Listen for messages from the server
-            socket.onmessage = function (event) {
-                const js = JSON.parse(event.data);
-                const from = js['from'];
-                const msg = js['message'];
-                addMessage(msg, "received", from);
-            };
-        }
-
-        connect();
+        chatClient.onMessage((from, text) => {
+            console.log(`CLIENT message ${from}: ${text}`);
+            addMessage(text, 'received', from);
+        });
 
         function addMessage(text, type, from) {
             const item = document.createElement('li');
@@ -165,11 +146,11 @@
                 item.textContent = text;
             } else {
                 item.innerHTML = `
-                    <div>
-                        <div><b>${from}</b> </div>
-                        <div>${text}</div>
-                    </div>
-                    `
+                            <div>
+                                <div><b>${from}</b> </div>
+                                <div>${text}</div>
+                            </div>
+                            `
             }
 
             document.getElementById('messages').appendChild(item);
@@ -179,6 +160,8 @@
             container.scrollTop = container.scrollHeight;
         }
 
+        chatClient.connect();
+
         // Send message on form submit
         document.getElementById('form').onsubmit = function (e) {
             e.preventDefault();
@@ -186,8 +169,8 @@
             const message = input.value.trim();
 
             if (message) {
-                socket.send(message); // Send message to the server
-                addMessage(message, "sent"); // Add to UI immediately
+                chatClient.send(message);
+                addMessage(message, "sent");
                 input.value = '';
             }
 

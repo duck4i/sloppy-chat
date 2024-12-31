@@ -5,24 +5,19 @@ import { describeRoute, openAPISpecs } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/valibot";
 import * as v from 'valibot';
 import log from "./log";
-import { cli } from "winston/lib/winston/config";
+import {  MessageType, type ChatMessage, type ChatMessageRequest, type ChatUserAck } from "./types";
 
 const httpPort = 8080;
 const app = new Hono();
 
-interface ChatMessage {
-    from: string;
-    message: string;
-}
-
 //  --------------------------------------------------------
 //  Sockets
 //  --------------------------------------------------------
-type WSocket = ServerWebSocket<unknown>;
-type WMessage = string | Buffer;
+export type WSocket = ServerWebSocket<unknown>;
+export type WMessage = string | Buffer;
 
-interface ChatUser {
-    id: string;
+export interface ChatUser {
+    userId: string;
     name: string;
     socket: WSocket;
 }
@@ -31,17 +26,27 @@ const clients = new Map<string, ChatUser>();
 
 const onConnect = (ws: WSocket) => {
     const id = crypto.randomUUID();
+    const generatedName = `slop-${id.substring(0, 6)}`;
+
     const cu: ChatUser = {
-        id: id,
-        name: `slop${id.substring(0, 6)}`,
+        userId: id,
+        name: generatedName,
         socket: ws
     };
     clients.set(id, cu);
+
     log.info(`User connected: ${cu.name}. (${clients.size})`);
+
+    const cr: ChatUserAck = {
+        type: MessageType.ACK,
+        userId: id,
+        generatedName: generatedName,
+    }
+    ws.send(JSON.stringify(cr));
 }
 
 const onDisconnect = (ws: WSocket) => {
-    for (const { id, name, socket } of clients.values()) {
+    for (const { userId: id, name, socket } of clients.values()) {
         if (socket === ws) {
             log.info(`User disconnected: ${name} (${clients.size})`);
             clients.delete(id);
@@ -50,8 +55,16 @@ const onDisconnect = (ws: WSocket) => {
 }
 
 const onMessage = async (ws: WSocket, message: WMessage) => {
+    const newMessageRequest = JSON.parse(message.toString()) as ChatMessageRequest;
+    const sentBy = clients.get(newMessageRequest.userId);
+
+    if (!sentBy) {
+        log.warn("Recieved payload from unknown user");
+        return;
+    }
+
     let fromName: string;
-    for (const { id, name, socket } of clients.values()) {
+    for (const { userId: id, name, socket } of clients.values()) {
         if (ws === socket) {
             fromName = clients.get(id)!.name;
             log.debug(`${name} sent "${message}"`);
@@ -59,12 +72,15 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
     }
 
     const rp: ChatMessage = {
-        from: fromName!,
-        message: `${message}`
+        type: MessageType.RESPONSE,
+        userName: fromName!,
+        message: newMessageRequest.message
     }
 
-    for (const { socket } of clients.values()) {
-        socket.send(JSON.stringify(rp));
+    //  Broadcast to all
+    for (const { userId, socket } of clients.values()) {
+        if (userId !== newMessageRequest.userId) // don't send back to itself
+            socket.send(JSON.stringify(rp));
     }
 }
 
