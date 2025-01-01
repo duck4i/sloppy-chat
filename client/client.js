@@ -1,4 +1,5 @@
 // client/client.ts
+var USER_NAME_STORAGE_ID = "sloppychat-username";
 class Client {
   server;
   socket = null;
@@ -9,6 +10,7 @@ class Client {
   state = 0 /* Disconnected */;
   constructor(server) {
     this.server = server;
+    this.userName = localStorage.getItem(USER_NAME_STORAGE_ID) || null;
   }
   connect() {
     this._connect(false);
@@ -46,6 +48,7 @@ class Client {
         this.userId = ack.userId;
         if (!this.userName) {
           this.userName = `slop-${this.userId.substring(0, 6)}`;
+          localStorage.setItem(USER_NAME_STORAGE_ID, this.userName);
         }
         const sr = {
           type: "SRC" /* SESSION_CREATE */,
@@ -73,6 +76,7 @@ class Client {
         const res = data;
         if (res.success) {
           this.userName = res.newName;
+          localStorage.setItem(USER_NAME_STORAGE_ID, this.userName);
         }
         if (this.nameChangeCallback) {
           this.nameChangeCallback(res.newName, res.success);

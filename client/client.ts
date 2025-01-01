@@ -6,6 +6,7 @@ export type OnConnected = (username: string) => void;
 export type OnDisconnected = () => void;
 export type OnNameChange = (newName: string, success: boolean) => void;
 
+const USER_NAME_STORAGE_ID = "sloppychat-username";
 enum ClientState { Disconnected, Connected, InSession, Connecting, Reconnecting }
 
 class Client {
@@ -22,6 +23,7 @@ class Client {
 
     constructor(server: string) {
         this.server = server;
+        this.userName = localStorage.getItem(USER_NAME_STORAGE_ID) || null;
     }
 
     connect() {
@@ -73,6 +75,7 @@ class Client {
 
                 if (!this.userName) {
                     this.userName = `slop-${this.userId.substring(0, 6)}`;
+                    localStorage.setItem(USER_NAME_STORAGE_ID, this.userName);
                 }
 
                 const sr: ChatUserCreateSession = {
@@ -106,6 +109,7 @@ class Client {
                 const res = data as ChatUserNameChangeAck;
                 if (res.success) {
                     this.userName = res.newName;
+                    localStorage.setItem(USER_NAME_STORAGE_ID, this.userName);
                 }
                 if (this.nameChangeCallback) {
                     this.nameChangeCallback(res.newName, res.success);
