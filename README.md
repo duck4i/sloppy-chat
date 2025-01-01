@@ -12,6 +12,42 @@ The server comes with the UI to trigger paths.
 Server API that requires admin permissions simply requests user key (pass) as set by `CHAT_ADMIN_KEY` variable.
 This is usually done in `.env` file.
 
+# Client 
+
+Client is TS but is auto transpiled to JS for funky HTML action.
+
+```js
+
+    const chatClient = new Client("ws://localhost:8080");
+    chatClient.connect();
+
+    //  Actions
+    chatClient.send(message);
+    chatClient.changeName(name);
+
+    //  Callbacks
+    chatClient.onConnected((name) => {
+        console.log("CLIENT - got name", name);
+        addMessage("Connected...", "system")
+    });
+
+    chatClient.onDisconnected(() => {
+        console.log("CLIENT - close");
+        addMessage("Disconnected.", "system")
+    });
+
+    chatClient.onMessage((from, text) => {
+        console.log(`CLIENT message ${from}: ${text}`);
+        addMessage(text, 'received', from);
+    });
+    
+    chatClient.onNameChange((name, success) => {
+        console.log(`CLIENT name change ${name}: ${success}`);
+        addMessage(success ? `Name changed to ${name}` : `Name change failed`, 'system');
+    });
+
+```
+
 # API
 
 * Main route shows welcome with API link at http://localhost:8080/
