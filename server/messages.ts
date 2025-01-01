@@ -7,7 +7,8 @@ export enum MessageType {
     MSG_RESPONSE = 'RESP', 
     NAME_CHANGE = 'NAME',
     NAME_CHANGE_ACK = 'NACK',
-    USER_KICK = 'KICK'
+    USER_KICK = 'KICK',
+    RATE_LIMIT = 'RATE'
 }
 
 // 
@@ -65,4 +66,9 @@ export interface ChatUserNameChangeAck {
 export interface ChatUserKick {
     type: MessageType.USER_KICK;
     message: string;
+}
+
+//  User rate limited
+export interface ChatRateLimit {
+    type: MessageType.RATE_LIMIT;
 }

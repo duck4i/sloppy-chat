@@ -1,20 +1,25 @@
 import { apiReference } from "@scalar/hono-api-reference";
 import { serve, type ServerWebSocket } from "bun";
 import { Hono } from "hono";
-import { serveStatic } from "hono/serve-static";
 import { describeRoute, openAPISpecs } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/valibot";
 import * as v from 'valibot';
 import log from "./log";
-import { MessageType } from "./types";
 import type {
     ChatMessage, ChatMessageRequest, ChatUserConnectedAck,
-    ChatUserCreateSession, ChatUserNameChangeAck, ChatUserNameChange, ChatUserCreateSessionAck,
-    ChatUserKick
-} from "./types";
+    ChatUserCreateSession,
+    ChatUserCreateSessionAck,
+    ChatUserKick,
+    ChatUserNameChange,
+    ChatUserNameChangeAck
+} from "./messages";
+import { MessageType } from "./messages";
 
 //  set in .env file, used for admin routes
-const adminPassword = process.env.CHAT_ADMIN_KEY;
+const ADMIN_KEY = process.env.CHAT_ADMIN_KEY;
+const ANON_PREFIX = process.env.ANON_PREFIX || "slop-";
+const RATE_LIMIT_MSG_PER_MINUTE = 20;   // 20 messages per minute
+const RATE_LIMIT_RESET_MINUTES = 60;    // resets every hour
 
 const httpPort = 8080;
 const app = new Hono();
@@ -33,6 +38,16 @@ export interface ChatUser {
 
 const activeBans = new Map<string, boolean>();
 const clients = new Map<string, ChatUser>();
+const limiter = new Map<string, number>();
+
+const limiterMs = RATE_LIMIT_RESET_MINUTES * 60 * 1000;
+
+const resetLimit = () => {
+    log.info("Rate limiter reset");
+    limiter.clear();
+    setTimeout(resetLimit, limiterMs);
+}
+setTimeout(resetLimit, limiterMs);
 
 const onConnect = (ws: WSocket) => {
 
@@ -41,7 +56,7 @@ const onConnect = (ws: WSocket) => {
         ws.close();
         return;
     }
-
+    
     const id = crypto.randomUUID();
     log.info(`User connected: ${id} (${ws.remoteAddress})`);
 
@@ -96,6 +111,13 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
             return;
         }
 
+        const sentCount = limiter.get(ws.remoteAddress) || 0;
+        if (sentCount > RATE_LIMIT_MSG_PER_MINUTE * RATE_LIMIT_RESET_MINUTES) {
+            log.warn(`Rate limit exceeded for ${sentBy.name}`);
+            return;
+        }
+        limiter.set(ws.remoteAddress, sentCount + 1);
+
         log.debug(`-> ${sentBy.name} ${req.message}`);
 
         const rp: ChatMessage = {
@@ -132,7 +154,7 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
         }
 
         log.debug(`User ${user?.name} changed name to ${req.newName}`);
-        user.name = isAuthenticated ? req.newName : `slop-${req.newName}`;
+        user.name = isAuthenticated ? req.newName : `${ANON_PREFIX}${req.newName}`;
         clients.set(req.userId, user);
 
         const ack: ChatUserNameChangeAck = {
@@ -212,7 +234,7 @@ app.get('/chat/kick',
         const id = c.req.query("id");
         const reqName = c.req.query("name");
 
-        if (key !== adminPassword) {
+        if (key !== ADMIN_KEY) {
             log.warn("Invalid admin key");
             return c.json({
                 message: "Invalid admin key",
@@ -273,7 +295,7 @@ app.get("/chat/restore",
         const key = c.req.query("adminKey");
         const ip = c.req.query("ip");
         
-        if (key !== adminPassword) {
+        if (key !== ADMIN_KEY) {
             log.warn("Invalid admin key");
             return c.json({
                 message: "Invalid admin key",

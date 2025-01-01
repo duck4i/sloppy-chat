@@ -1,5 +1,5 @@
-import type { ChatMessage, ChatMessageRequest, ChatUserConnectedAck, ChatUserCreateSession, ChatUserNameChangeAck, ChatUserNameChange } from "../server/types";
-import { MessageType } from "../server/types";
+import type { ChatMessage, ChatMessageRequest, ChatUserConnectedAck, ChatUserCreateSession, ChatUserNameChangeAck, ChatUserNameChange } from "../server/messages";
+import { MessageType } from "../server/messages";
 
 export type OnChatRecieved = (from: string, message: string) => void;
 export type OnConnected = (username: string) => void;

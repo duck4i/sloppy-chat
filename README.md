@@ -1,13 +1,13 @@
 # sloppy-chat
 
-This is made for Slopify.dev, a super simple bun driven chat server and client designed to be as accessible for editing by community but still providing basic security features:
+This is a modern and performant chat server and client system, made for Slopify.dev, its super simple and designed to be as accessible for editing by community but still providing basic security features:
 - No chat user name duplication
 - Rate limiting and spam prevention 
 - Server API for kicking users and banning IPs 
 
 The server comes with the UI to trigger routes for basic admin operations like user removal and banning.
 
-All users have `slop-` prefix names until authenticated via OAuth.
+While there is nothing wrong with it, it was designed for fun so all users have `slop-` prefix names until authenticated via OAuth. This behaviour is controllable with evn variables.
 
 # Admin authentication 
 
