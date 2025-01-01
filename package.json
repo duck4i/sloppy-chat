@@ -9,7 +9,11 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@scalar/hono-api-reference": "^0.5.165",
     "hono": "^4.6.15",
-    "winston": "^3.17.0"
+    "hono-openapi": "^0.3.1",
+    "winston": "^3.17.0",
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.24.1"
   }
 }

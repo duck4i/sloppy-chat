@@ -13,7 +13,7 @@
         }
 
         body {
-            background-color: #f0f0f0;
+            background-color: #333;
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -42,13 +42,26 @@
         }
 
         .received {
-            background: #e5e5ea;
+            background: #111;
+            color: white;
             float: left;
             border-bottom-left-radius: 5px;
         }
 
+        .system {
+            color: #111;
+            text-align: center;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .bot {
+            background-color: rgb(59, 10, 59);
+            color: white;
+        }
+
         .sent {
-            background: #0b93f6;
+            background: #222;
             color: white;
             float: right;
             border-bottom-right-radius: 5px;
@@ -59,7 +72,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: #fff;
+            background: #333;
             padding: 15px;
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
         }
@@ -74,14 +87,16 @@
         #input {
             flex: 1;
             padding: 12px;
-            border: 1px solid #ddd;
+            color: white;
+            border: 1px solid #222;
+            background-color: #333;
             border-radius: 20px;
             outline: none;
             font-size: 16px;
         }
 
         button {
-            background: #0b93f6;
+            background: #222;
             color: white;
             border: none;
             padding: 0 20px;
@@ -92,12 +107,20 @@
         }
 
         button:hover {
-            background: #0a84e0;
+            background: #111;
+        }
+        
+        .options-div {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+            height: 30px;
         }
     </style>
 </head>
 
 <body>
+    <script src="./client/client.js"></script>
     <div id="chat-container">
         <ul id="messages"></ul>
     </div>
@@ -106,31 +129,51 @@
             <input id="input" placeholder="Type a message..." autocomplete="off" />
             <button>Send</button>
         </form>
+        <div class="options-div">
+            <button id="btnChangeName">Change name</button>
+        </div>
     </div>
 
     <script>
-        const host = window.location.host;
-        const socket = new WebSocket(`ws://${host}`);
 
-        socket.onopen = () => {
-            console.log("Connection established");
-            addMessage("Connected to chat", "received");
-        }
+        const chatClient = new Client("ws://localhost:8080");
+        chatClient.connect();
 
-        socket.onclose = () => {
-            console.log("Connection closed");
-            addMessage("Disconnected from chat", "received");
-        }
+        chatClient.onConnected((name) => {
+            console.log("CLIENT - got name", name);
+            addMessage("Connected...", "system")
+        });
 
-        socket.onerror = (err) => {
-            console.log("Error", err);
-            addMessage("Error connecting to chat", "received");
-        }
+        chatClient.onDisconnected(() => {
+            console.log("CLIENT - close");
+            addMessage("Disconnected.", "system")
+        });
 
-        function addMessage(text, type) {
+        chatClient.onMessage((from, text, type) => {
+            console.log(`CLIENT message ${from}: ${text} (${type})`);
+            addMessage(text, type === 1 ? 'bot' : 'received', from);
+        });
+        
+        chatClient.onNameChange((name, success) => {
+            console.log(`CLIENT name change ${name}: ${success}`);
+            addMessage(success ? `Name changed to ${name}` : `Name change failed`, 'system');
+        });
+
+        function addMessage(text, type, from) {
             const item = document.createElement('li');
-            item.textContent = text;
             item.className = `message ${type}`;
+
+            if (from === undefined) {
+                item.textContent = text;
+            } else {
+                item.innerHTML = `
+                            <div>
+                                <div><b>${from}</b> </div>
+                                <div>${text}</div>
+                            </div>
+                            `
+            }
+
             document.getElementById('messages').appendChild(item);
 
             // Scroll to bottom
@@ -138,10 +181,10 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // Listen for messages from the server
-        socket.onmessage = function (event) {
-            addMessage(event.data, "received");
-        };
+        document.getElementById('btnChangeName').onclick = function () {
+            const name = prompt("Enter your name");
+            chatClient.changeName(name);
+        }
 
         // Send message on form submit
         document.getElementById('form').onsubmit = function (e) {
@@ -150,13 +193,14 @@
             const message = input.value.trim();
 
             if (message) {
-                socket.send(message); // Send message to the server
-                addMessage(message, "sent"); // Add to UI immediately
+                chatClient.send(message);
+                addMessage(message, "sent");
                 input.value = '';
             }
 
             return false;
         };
+
     </script>
 </body>
 
