@@ -55,6 +55,11 @@
             max-width: 100%;
         }
 
+        .bot {
+            background-color: rgb(59, 10, 59);
+            color: white;
+        }
+
         .sent {
             background: #222;
             color: white;
@@ -144,9 +149,9 @@
             addMessage("Disconnected.", "system")
         });
 
-        chatClient.onMessage((from, text) => {
-            console.log(`CLIENT message ${from}: ${text}`);
-            addMessage(text, 'received', from);
+        chatClient.onMessage((from, text, type) => {
+            console.log(`CLIENT message ${from}: ${text} (${type})`);
+            addMessage(text, type === 1 ? 'bot' : 'received', from);
         });
         
         chatClient.onNameChange((name, success) => {

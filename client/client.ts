@@ -1,7 +1,7 @@
-import type { ChatMessage, ChatMessageRequest, ChatUserConnectedAck, ChatUserCreateSession, ChatUserNameChangeAck, ChatUserNameChange } from "../server/messages";
+import type { ChatMessage, ChatMessageRequest, ChatUserConnectedAck, ChatUserCreateSession, ChatUserNameChangeAck, ChatUserNameChange, MessageUserType } from "../server/messages";
 import { MessageType } from "../server/messages";
 
-export type OnChatRecieved = (from: string, message: string) => void;
+export type OnChatRecieved = (from: string, message: string, userType: MessageUserType) => void;
 export type OnConnected = (username: string) => void;
 export type OnDisconnected = () => void;
 export type OnNameChange = (newName: string, success: boolean) => void;
@@ -100,7 +100,7 @@ class Client {
                 console.debug("Chat message recieved from.", msg.userName);
 
                 if (this.messageCallback) {
-                    this.messageCallback(msg.userName, msg.message);
+                    this.messageCallback(msg.userName, msg.message, msg.userType);
                 }
                 return;
             }

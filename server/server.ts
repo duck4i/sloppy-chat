@@ -13,7 +13,8 @@ import type {
     ChatUserNameChange,
     ChatUserNameChangeAck
 } from "./messages";
-import { MessageType } from "./messages";
+import { MessageType, MessageUserType } from "./messages";
+import { processBot } from "./bots";
 
 //  set in .env file, used for admin routes
 const ADMIN_KEY = process.env.CHAT_ADMIN_KEY;
@@ -56,7 +57,7 @@ const onConnect = (ws: WSocket) => {
         ws.close();
         return;
     }
-    
+
     const id = crypto.randomUUID();
     log.info(`User connected: ${id} (${ws.remoteAddress})`);
 
@@ -122,14 +123,34 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
 
         const rp: ChatMessage = {
             type: MessageType.MSG_RESPONSE,
+            userType: MessageUserType.User,
             userName: sentBy.name,
             message: req.message
         }
 
+        //  process bot
+        const botReply = await processBot(ws!, req.message, sentBy.name, req.userId);
+
         //  Broadcast to all
         for (const { userId, socket } of clients.values()) {
-            if (req.userId !== userId) // don't send back to itself
-                socket.send(JSON.stringify(rp));
+            const senderItself = req.userId === userId; 
+            
+            if (!senderItself) {
+                socket.send(JSON.stringify(rp));    
+            }
+
+            if (botReply){
+                if (botReply.onlyToSender && !senderItself) 
+                    continue;
+                
+                const botMsg: ChatMessage = {
+                    type: MessageType.MSG_RESPONSE,
+                    userType: MessageUserType.Bot,
+                    userName: botReply.botName,
+                    message: botReply.message
+                }
+                socket.send(JSON.stringify(botMsg));
+            }
         }
     }
 
@@ -294,7 +315,7 @@ app.get("/chat/restore",
     async (c) => {
         const key = c.req.query("adminKey");
         const ip = c.req.query("ip");
-        
+
         if (key !== ADMIN_KEY) {
             log.warn("Invalid admin key");
             return c.json({

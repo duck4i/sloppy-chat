@@ -11,6 +11,11 @@ export enum MessageType {
     RATE_LIMIT = 'RATE'
 }
 
+export enum MessageUserType {
+    User,
+    Bot
+}
+
 // 
 //  For security purposes make sure no user ID is ever passed to the client or broadcasted.
 //  Some of the messages may look duplicate for this exact reason.
@@ -44,6 +49,7 @@ export interface ChatMessageRequest {
 //  Broadcast message recieved by clients (no ID)
 export interface ChatMessage {
     type: MessageType.MSG_RESPONSE;
+    userType: MessageUserType;
     userName: string;
     message: string;
 }
