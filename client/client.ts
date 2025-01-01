@@ -87,7 +87,7 @@ class Client {
                 return;
             }
 
-            if (type === MessageType.SESSION_RESP) {
+            if (type === MessageType.SESSION_ACK) {
                 this.state = ClientState.InSession;
 
                 if (this.connectedCallback) {

@@ -2,7 +2,7 @@
 export enum MessageType { 
     ACK = 'ACK', 
     SESSION_CREATE = 'SRC', 
-    SESSION_RESP = 'SRP', 
+    SESSION_ACK = 'SRP', 
     MSG_REQUEST = 'REQ', 
     MSG_RESPONSE = 'RESP', 
     NAME_CHANGE = 'NAME',
@@ -29,7 +29,7 @@ export interface ChatUserCreateSession {
 
 //  User session created acknowledges to client
 export interface ChatUserCreateSessionAck {
-    type: MessageType.SESSION_RESP;
+    type: MessageType.SESSION_ACK;
 }
 
 //  New chat message from client

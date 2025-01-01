@@ -73,7 +73,7 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
 
         //  Acknowledge session creation
         const sr: ChatUserCreateSessionAck = {
-            type: MessageType.SESSION_RESP
+            type: MessageType.SESSION_ACK
         }
         ws.send(JSON.stringify(sr));
     }
@@ -113,14 +113,23 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
             return;
         }
 
+        //  Validate
+        let duplicate = false;
+        for (const { name } of clients.values()) {
+            if (name === req.newName) {
+                duplicate = true;
+                break;
+            }
+        }
+
         log.debug(`User ${user?.name} changed name to ${req.newName}`);
         user.name = req.newName;
         clients.set(req.userId, user);
 
-        const ack : ChatUserNameChangeAck = {
+        const ack: ChatUserNameChangeAck = {
             type: MessageType.NAME_CHANGE_ACK,
-            success: true,
-            newName: req.newName
+            success: !duplicate,
+            newName: !duplicate ? user.name : req.newName
         }
         ws.send(JSON.stringify(ack));
     }
@@ -141,7 +150,7 @@ app.get('/openapi', openAPISpecs(app, {
 
 app.get('/docs', apiReference({
     theme: 'saturn',
-    spec: { url: '/openapi' }, 
+    spec: { url: '/openapi' },
 }));
 
 //  Routes

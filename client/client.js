@@ -58,7 +58,7 @@ class Client {
         this.socket.send(JSON.stringify(sr));
         return;
       }
-      if (type === "SRP" /* SESSION_RESP */) {
+      if (type === "SRP" /* SESSION_ACK */) {
         this.state = 2 /* InSession */;
         if (this.connectedCallback) {
           this.connectedCallback(this.userName);
