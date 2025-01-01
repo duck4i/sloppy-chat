@@ -7,6 +7,8 @@ This is made for Slopify.dev, a super simple bun driven chat server and client d
 
 The server comes with the UI to trigger routes for basic admin operations like user removal and banning.
 
+All users have `slop-` prefix names until authenticated via OAuth.
+
 # Admin authentication 
 
 Server API that requires admin permissions simply requests user key (pass) as set by `CHAT_ADMIN_KEY` variable.
@@ -52,7 +54,11 @@ Client is TS but is auto transpiled to JS for funky HTML action.
 
 * Main route shows welcome with API link at http://localhost:8080/
 * API Docs http://localhost:8080/docs (use this to kick users out)
-  
+
+Status route shows the count of connected users.
+
+![Kick User](./doc/kick.png)
+
 # Usage 
 
 To install dependencies:

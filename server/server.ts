@@ -9,7 +9,8 @@ import log from "./log";
 import { MessageType } from "./types";
 import type {
     ChatMessage, ChatMessageRequest, ChatUserConnectedAck,
-    ChatUserCreateSession, ChatUserNameChangeAck, ChatUserNameChange, ChatUserCreateSessionAck
+    ChatUserCreateSession, ChatUserNameChangeAck, ChatUserNameChange, ChatUserCreateSessionAck,
+    ChatUserKick
 } from "./types";
 
 //  set in .env file, used for admin routes
@@ -30,11 +31,18 @@ export interface ChatUser {
     socket: WSocket;
 }
 
+const activeBans = new Map<string, boolean>();
 const clients = new Map<string, ChatUser>();
 
 const onConnect = (ws: WSocket) => {
-    const id = crypto.randomUUID();
 
+    if (activeBans.has(ws.remoteAddress)) {
+        log.warn(`Banned IP ${ws.remoteAddress} tried to connect`);
+        ws.close();
+        return;
+    }
+
+    const id = crypto.randomUUID();
     log.info(`User connected: ${id} (${ws.remoteAddress})`);
 
     //  We generate info about user and pass it to them - they will re-send their old IDs if they are reconnecting
@@ -107,6 +115,7 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
     if (type === MessageType.NAME_CHANGE) {
         const req = request as ChatUserNameChange;
         const user = clients.get(req.userId);
+        const isAuthenticated = false;
 
         if (!user) {
             log.warn("Recieved name change request from unknown user");
@@ -123,7 +132,7 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
         }
 
         log.debug(`User ${user?.name} changed name to ${req.newName}`);
-        user.name = req.newName;
+        user.name = isAuthenticated ? req.newName : `slop-${req.newName}`;
         clients.set(req.userId, user);
 
         const ack: ChatUserNameChangeAck = {
@@ -180,11 +189,13 @@ app.get("/status",
 );
 
 const ChatKickRequest = v.object({
+    adminKey: v.string(),
     userId: v.optional(v.string()),
-    name: v.string()
+    name: v.optional(v.string())
 });
 
 const ChatKickResponse = v.object({
+    message: v.optional(v.string()),
     success: v.boolean(),
 });
 
@@ -197,10 +208,47 @@ app.get('/chat/kick',
     }),
     validator('query', ChatKickRequest),
     async (c) => {
+        const key = c.req.query("adminKey");
         const id = c.req.query("id");
-        const name = c.req.query("name");
+        const reqName = c.req.query("name");
 
-        log.info(`Kicking user ${name} with id ${id}`);
+        if (key !== adminPassword) {
+            log.warn("Invalid admin key");
+            return c.json({
+                message: "Invalid admin key",
+                success: false
+            });
+        }
+
+        if (!id && !reqName) {
+            log.warn("No user specified");
+            return c.json({
+                message: "No user specified",
+                success: false
+            });
+        }
+
+        log.info(`Kicking user ${reqName} with id ${id}`);
+
+        for (const { userId, name, socket } of clients.values()) {
+            if (userId === id || reqName === name) {
+
+                //  Inform user (but ignore any possible excption)
+                try {
+                    const kick: ChatUserKick = {
+                        type: MessageType.USER_KICK,
+                        message: "You have been kicked from the chat"
+                    }
+                    socket.send(JSON.stringify(kick));
+
+                    socket.close();
+                    clients.delete(userId);
+                } catch (err) { }
+
+                activeBans.set(socket.remoteAddress, true);
+                break;
+            }
+        }
 
         return c.json({
             success: true
@@ -208,21 +256,42 @@ app.get('/chat/kick',
     }
 );
 
-const ChatBanIpRequest = v.object({
+const ChatRestoreAccess = v.object({
+    adminKey: v.string(),
     ip: v.string(),
 });
 
-app.get("/chat/ban",
+app.get("/chat/restore",
     describeRoute({
-        description: "Bans an IP address",
+        description: "Removes a ban for an IP",
         responses: {
             200: { description: "Success", content: { 'application/json': { schema: resolver(ChatKickResponse) } } }
         }
     }),
-    validator('query', ChatBanIpRequest),
+    validator('query', ChatRestoreAccess),
     async (c) => {
+        const key = c.req.query("adminKey");
         const ip = c.req.query("ip");
+        
+        if (key !== adminPassword) {
+            log.warn("Invalid admin key");
+            return c.json({
+                message: "Invalid admin key",
+                success: false
+            });
+        }
+
+        if (!activeBans.has(ip!)) {
+            log.warn(`IP ${ip} not banned`);
+            return c.json({
+                message: "IP not banned",
+                success: false
+            });
+        }
+
         log.info(`Banning IP ${ip}`);
+
+        activeBans.delete(ip!);
 
         return c.json({
             success: true

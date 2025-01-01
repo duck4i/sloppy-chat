@@ -6,7 +6,8 @@ export enum MessageType {
     MSG_REQUEST = 'REQ', 
     MSG_RESPONSE = 'RESP', 
     NAME_CHANGE = 'NAME',
-    NAME_CHANGE_ACK = 'NACK'
+    NAME_CHANGE_ACK = 'NACK',
+    USER_KICK = 'KICK'
 }
 
 // 
@@ -58,4 +59,10 @@ export interface ChatUserNameChangeAck {
     type: MessageType.NAME_CHANGE_ACK;
     success: boolean;
     newName: string;
+}
+
+//  User kicked from chat (by server)
+export interface ChatUserKick {
+    type: MessageType.USER_KICK;
+    message: string;
 }
