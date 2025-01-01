@@ -54,6 +54,12 @@ Client is TS but is auto transpiled to JS for funky HTML action.
 
 ```
 
+# Docker 
+
+There is published Docker image for the server in case you need it.
+
+https://hub.docker.com/r/duck4i/sloppy-chat
+
 # API
 
 * Main route shows welcome with API link at http://localhost:8080/
