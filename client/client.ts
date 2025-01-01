@@ -1,11 +1,12 @@
-import type { ChatMessage, ChatMessageRequest, ChatUserAck } from "../server/types";
+import type { ChatMessage, ChatMessageRequest, ChatUserConnectedAck, ChatUserCreateSession, ChatUserNameChangeAck, ChatUserNameChange } from "../server/types";
 import { MessageType } from "../server/types";
 
 export type OnChatRecieved = (from: string, message: string) => void;
 export type OnConnected = (username: string) => void;
 export type OnDisconnected = () => void;
+export type OnNameChange = (newName: string, success: boolean) => void;
 
-enum ClientState { Disconnected, Connected, Connecting, Reconnecting }
+enum ClientState { Disconnected, Connected, InSession, Connecting, Reconnecting }
 
 class Client {
     server: string;
@@ -23,7 +24,11 @@ class Client {
         this.server = server;
     }
 
-    connect(isReconnect: boolean = false) {
+    connect() {
+        this._connect(false);
+    }
+
+    private _connect(isReconnect: boolean = false) {
 
         this.socket = new WebSocket(this.server); // triggers connection
         this.state = isReconnect ? ClientState.Reconnecting : ClientState.Connecting;
@@ -34,19 +39,19 @@ class Client {
         }
 
         this.socket.onclose = (ev) => {
-            if (this.state === ClientState.Connected && this.disconnectedCallback) {
+            if ((this.state === ClientState.Connected || this.state === ClientState.InSession) && this.disconnectedCallback) {
                 console.warn("Server connection lost.");
                 this.disconnectedCallback();
             }
 
             this.state = ClientState.Disconnected;
-            
+
             //  Reconnect
             if (this.reconnectHandle)
                 clearTimeout(this.reconnectHandle);
 
             this.reconnectHandle = setTimeout(() => {
-                this.connect(true);
+                this._connect(true);
             }, this.reconnectInterval);
         }
 
@@ -61,25 +66,50 @@ class Client {
             const type: MessageType = data['type'];
 
             if (type === MessageType.ACK) {
-                const ack = data as ChatUserAck;
-                console.debug("Recieved ACK message on connect with name", ack.generatedName);
-                this.userId = ack.userId;
-                this.userName = ack.generatedName;
+                const ack = data as ChatUserConnectedAck;
+                console.debug("Recieved ACK message on connect with ID", ack.userId);
 
-                if (this.connectedCallback) {
-                    this.connectedCallback(this.userName);
+                this.userId = ack.userId;
+
+                if (!this.userName) {
+                    this.userName = `slop-${this.userId.substring(0, 6)}`;
                 }
+
+                const sr: ChatUserCreateSession = {
+                    type: MessageType.SESSION_CREATE,
+                    userId: this.userId,
+                    desiredName: this.userName
+                }
+                this.socket!.send(JSON.stringify(sr));
                 return;
             }
 
-            if (type === MessageType.RESPONSE) {
+            if (type === MessageType.SESSION_RESP) {
+                this.state = ClientState.InSession;
+
+                if (this.connectedCallback) {
+                    this.connectedCallback(this.userName!);
+                }
+            }
+
+            if (type === MessageType.MSG_RESPONSE) {
                 const msg = data as ChatMessage;
                 console.debug("Chat message recieved from.", msg.userName);
-                
+
                 if (this.messageCallback) {
                     this.messageCallback(msg.userName, msg.message);
                 }
                 return;
+            }
+
+            if (type === MessageType.NAME_CHANGE_ACK) {
+                const res = data as ChatUserNameChangeAck;
+                if (res.success) {
+                    this.userName = res.newName;
+                }
+                if (this.nameChangeCallback) {
+                    this.nameChangeCallback(res.newName, res.success);
+                }
             }
         }
     }
@@ -92,17 +122,39 @@ class Client {
         }
     }
 
-    send(message: string) {
-        if (this.state !== ClientState.Connected || !this.socket) {
-            console.warn("Sending message while client disconnected.");
-            return;
+    send(message: string): boolean {
+        if (this.state !== ClientState.InSession || !this.socket) {
+            console.warn("Sending message without client session.");
+            return false;
         }
         const pr: ChatMessageRequest = {
-            type: MessageType.REQUEST,
+            type: MessageType.MSG_REQUEST,
             userId: this.userId!,
             message: message
         }
         this.socket.send(JSON.stringify(pr));
+        return true;
+    }
+
+    private changeName(newName: string): boolean {
+        if (this.state !== ClientState.InSession || !this.socket) {
+            console.warn("Trying to change name without session.");
+            return false;
+        }
+
+        if (newName?.length < 3) {
+            console.warn("Name too short.");
+            return false;
+        }
+
+        const nc: ChatUserNameChange = {
+            type: MessageType.NAME_CHANGE,
+            userId: this.userId!,
+            newName: newName
+        };
+
+        this.socket.send(JSON.stringify(nc));
+        return true;
     }
 
     //  Callbacks
@@ -110,6 +162,7 @@ class Client {
     private messageCallback: OnChatRecieved | null = null;
     private connectedCallback: OnConnected | null = null;
     private disconnectedCallback: OnDisconnected | null = null;
+    private nameChangeCallback: OnNameChange | null = null;
 
     onConnected(callback: OnConnected) {
         this.connectedCallback = callback;
@@ -121,6 +174,10 @@ class Client {
 
     onMessage(callback: OnChatRecieved) {
         this.messageCallback = callback;
+    }
+
+    onNameChange(callback: OnNameChange) {
+        this.nameChangeCallback = callback;
     }
 }
 

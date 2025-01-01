@@ -1,11 +1,19 @@
 import { apiReference } from "@scalar/hono-api-reference";
 import { serve, type ServerWebSocket } from "bun";
 import { Hono } from "hono";
+import { serveStatic } from "hono/serve-static";
 import { describeRoute, openAPISpecs } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/valibot";
 import * as v from 'valibot';
 import log from "./log";
-import {  MessageType, type ChatMessage, type ChatMessageRequest, type ChatUserAck } from "./types";
+import { MessageType } from "./types";
+import type {
+    ChatMessage, ChatMessageRequest, ChatUserConnectedAck,
+    ChatUserCreateSession, ChatUserNameChangeAck, ChatUserNameChange, ChatUserCreateSessionAck
+} from "./types";
+
+//  set in .env file, used for admin routes
+const adminPassword = process.env.CHAT_ADMIN_KEY;
 
 const httpPort = 8080;
 const app = new Hono();
@@ -26,21 +34,13 @@ const clients = new Map<string, ChatUser>();
 
 const onConnect = (ws: WSocket) => {
     const id = crypto.randomUUID();
-    const generatedName = `slop-${id.substring(0, 6)}`;
 
-    const cu: ChatUser = {
-        userId: id,
-        name: generatedName,
-        socket: ws
-    };
-    clients.set(id, cu);
+    log.info(`User connected: ${id} (${ws.remoteAddress})`);
 
-    log.info(`User connected: ${cu.name}. (${clients.size})`);
-
-    const cr: ChatUserAck = {
+    //  We generate info about user and pass it to them - they will re-send their old IDs if they are reconnecting
+    const cr: ChatUserConnectedAck = {
         type: MessageType.ACK,
         userId: id,
-        generatedName: generatedName,
     }
     ws.send(JSON.stringify(cr));
 }
@@ -55,32 +55,74 @@ const onDisconnect = (ws: WSocket) => {
 }
 
 const onMessage = async (ws: WSocket, message: WMessage) => {
-    const newMessageRequest = JSON.parse(message.toString()) as ChatMessageRequest;
-    const sentBy = clients.get(newMessageRequest.userId);
+    const request = JSON.parse(message.toString());
+    const type: MessageType = request['type'];
 
-    if (!sentBy) {
-        log.warn("Recieved payload from unknown user");
-        return;
+    //  User connected - create session
+    if (type === MessageType.SESSION_CREATE) {
+        const req = request as ChatUserCreateSession;
+
+        log.info(`User ${req.desiredName} session created with ID ${req.userId} (${clients.size + 1})`);
+
+        const cu: ChatUser = {
+            userId: req.userId,
+            name: req.desiredName,
+            socket: ws
+        };
+        clients.set(req.userId, cu);
+
+        //  Acknowledge session creation
+        const sr: ChatUserCreateSessionAck = {
+            type: MessageType.SESSION_RESP
+        }
+        ws.send(JSON.stringify(sr));
     }
 
-    let fromName: string;
-    for (const { userId: id, name, socket } of clients.values()) {
-        if (ws === socket) {
-            fromName = clients.get(id)!.name;
-            log.debug(`${name} sent "${message}"`);
+    //  New chat message
+    if (type === MessageType.MSG_REQUEST) {
+        const req = request as ChatMessageRequest;
+        const sentBy = clients.get(req.userId);
+
+        if (!sentBy) {
+            log.warn("Recieved payload from unknown user");
+            return;
+        }
+
+        log.debug(`-> ${sentBy.name} ${req.message}`);
+
+        const rp: ChatMessage = {
+            type: MessageType.MSG_RESPONSE,
+            userName: sentBy.name,
+            message: req.message
+        }
+
+        //  Broadcast to all
+        for (const { userId, socket } of clients.values()) {
+            if (req.userId !== userId) // don't send back to itself
+                socket.send(JSON.stringify(rp));
         }
     }
 
-    const rp: ChatMessage = {
-        type: MessageType.RESPONSE,
-        userName: fromName!,
-        message: newMessageRequest.message
-    }
+    //  User name change
+    if (type === MessageType.NAME_CHANGE) {
+        const req = request as ChatUserNameChange;
+        const user = clients.get(req.userId);
 
-    //  Broadcast to all
-    for (const { userId, socket } of clients.values()) {
-        if (userId !== newMessageRequest.userId) // don't send back to itself
-            socket.send(JSON.stringify(rp));
+        if (!user) {
+            log.warn("Recieved name change request from unknown user");
+            return;
+        }
+
+        log.debug(`User ${user?.name} changed name to ${req.newName}`);
+        user.name = req.newName;
+        clients.set(req.userId, user);
+
+        const ack : ChatUserNameChangeAck = {
+            type: MessageType.NAME_CHANGE_ACK,
+            success: true,
+            newName: req.newName
+        }
+        ws.send(JSON.stringify(ack));
     }
 }
 
@@ -99,7 +141,7 @@ app.get('/openapi', openAPISpecs(app, {
 
 app.get('/docs', apiReference({
     theme: 'saturn',
-    spec: { url: '/openapi' },
+    spec: { url: '/openapi' }, 
 }));
 
 //  Routes
@@ -112,7 +154,7 @@ app.onError((err, c) => {
 
 const StatusResponse = v.object({
     clients: v.number()
-})
+});
 
 app.get("/status",
     describeRoute({
@@ -128,27 +170,53 @@ app.get("/status",
     }
 );
 
-const ChatInfoRequest = v.object({
-    id: v.string()
+const ChatKickRequest = v.object({
+    userId: v.optional(v.string()),
+    name: v.string()
 });
 
-const ChatInfoResponse = v.object({
-    id: v.string()
+const ChatKickResponse = v.object({
+    success: v.boolean(),
 });
 
-app.get('/chat/:id',
+app.get('/chat/kick',
     describeRoute({
-        description: "Returns info about the chat ID",
+        description: "Kicks the user out of the chat",
         responses: {
-            200: { description: "Success", content: { 'application/json': { schema: resolver(ChatInfoResponse) } } }
+            200: { description: "Success", content: { 'application/json': { schema: resolver(ChatKickResponse) } } }
         }
     }),
-    validator('param', ChatInfoRequest),
+    validator('query', ChatKickRequest),
     async (c) => {
-        const id = c.req.param("id");
+        const id = c.req.query("id");
+        const name = c.req.query("name");
+
+        log.info(`Kicking user ${name} with id ${id}`);
 
         return c.json({
-            id: id
+            success: true
+        });
+    }
+);
+
+const ChatBanIpRequest = v.object({
+    ip: v.string(),
+});
+
+app.get("/chat/ban",
+    describeRoute({
+        description: "Bans an IP address",
+        responses: {
+            200: { description: "Success", content: { 'application/json': { schema: resolver(ChatKickResponse) } } }
+        }
+    }),
+    validator('query', ChatBanIpRequest),
+    async (c) => {
+        const ip = c.req.query("ip");
+        log.info(`Banning IP ${ip}`);
+
+        return c.json({
+            success: true
         });
     }
 );

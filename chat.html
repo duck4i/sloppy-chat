@@ -49,8 +49,8 @@
         }
 
         .system {
-            background: #444;
-            color: white;
+            color: #111;
+            text-align: center;
             width: 100%;
             max-width: 100%;
         }
@@ -104,11 +104,18 @@
         button:hover {
             background: #111;
         }
+        
+        .options-div {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+            height: 30px;
+        }
     </style>
 </head>
 
 <body>
-    <script src="./client.js"></script>
+    <script src="./client/client.js"></script>
     <div id="chat-container">
         <ul id="messages"></ul>
     </div>
@@ -117,6 +124,9 @@
             <input id="input" placeholder="Type a message..." autocomplete="off" />
             <button>Send</button>
         </form>
+        <div class="options-div">
+            <button id="btnChangeName">Change name</button>
+        </div>
     </div>
 
     <script>
@@ -137,6 +147,11 @@
         chatClient.onMessage((from, text) => {
             console.log(`CLIENT message ${from}: ${text}`);
             addMessage(text, 'received', from);
+        });
+        
+        chatClient.onNameChange((name, success) => {
+            console.log(`CLIENT name change ${name}: ${success}`);
+            addMessage(success ? `Name changed to ${name}` : `Name change failed`, 'system');
         });
 
         function addMessage(text, type, from) {
@@ -161,6 +176,11 @@
             container.scrollTop = container.scrollHeight;
         }
 
+        document.getElementById('btnChangeName').onclick = function () {
+            const name = prompt("Enter your name");
+            chatClient.changeName(name);
+        }
+
         // Send message on form submit
         document.getElementById('form').onsubmit = function (e) {
             e.preventDefault();
@@ -175,6 +195,7 @@
 
             return false;
         };
+
     </script>
 </body>
 
