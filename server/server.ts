@@ -1,5 +1,5 @@
 import { apiReference } from "@scalar/hono-api-reference";
-import { serve, type ServerWebSocket } from "bun";
+import { type Server, serve, type ServerWebSocket } from "bun";
 import { Hono } from "hono";
 import { describeRoute, openAPISpecs } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/valibot";
@@ -14,7 +14,7 @@ import type {
     ChatUserNameChangeAck
 } from "./messages";
 import { MessageType, MessageUserType } from "./messages";
-import { processBot } from "./bots";
+import { type BotProcessFunction } from "./bots";
 
 //  set in .env file, used for admin routes
 const ADMIN_KEY = process.env.CHAT_ADMIN_KEY;
@@ -24,6 +24,7 @@ const ANON_PREFIX = process.env.CHAT_ANON_PREFIX || "";
 
 const RATE_LIMIT_MSG_PER_MINUTE = 20;   // 20 messages per minute
 const RATE_LIMIT_RESET_MINUTES = 60;    // resets every hour
+const limiterMs = RATE_LIMIT_RESET_MINUTES * 60 * 1000;
 
 //  --------------------------------------------------------
 //  Sockets
@@ -40,15 +41,9 @@ export interface ChatUser {
 const activeBans = new Map<string, boolean>();
 const clients = new Map<string, ChatUser>();
 const limiter = new Map<string, number>();
+const bots: BotProcessFunction[] = [];
 
-const limiterMs = RATE_LIMIT_RESET_MINUTES * 60 * 1000;
-
-const resetLimit = () => {
-    log.info("Rate limiter reset");
-    limiter.clear();
-    setTimeout(resetLimit, limiterMs);
-}
-setTimeout(resetLimit, limiterMs);
+const app = new Hono();
 
 const onConnect = (ws: WSocket) => {
 
@@ -128,28 +123,30 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
             message: req.message
         }
 
-        //  process bot
-        const botReply = await processBot(ws!, req.message, sentBy.name, req.userId);
+        //  process bots
+        for (const processBot of bots) {
+            const botReply = await processBot(ws!, req.message, sentBy.name, req.userId);
 
-        //  Broadcast to all
-        for (const { userId, socket } of clients.values()) {
-            const senderItself = req.userId === userId;
+            //  Broadcast to all
+            for (const { userId, socket } of clients.values()) {
+                const senderItself = req.userId === userId;
 
-            if (!senderItself) {
-                socket.send(JSON.stringify(rp)); // no need to return message to sender    
-            }
-
-            if (botReply) {
-                if (botReply.onlyToSender && !senderItself)
-                    continue;
-
-                const botMsg: ChatMessage = {
-                    type: MessageType.MSG_RESPONSE,
-                    userType: MessageUserType.Bot,
-                    userName: botReply.botName,
-                    message: botReply.message
+                if (!senderItself) {
+                    socket.send(JSON.stringify(rp)); // no need to return message to sender    
                 }
-                socket.send(JSON.stringify(botMsg));
+
+                if (botReply) {
+                    if (botReply.onlyToSender && !senderItself)
+                        continue;
+
+                    const botMsg: ChatMessage = {
+                        type: MessageType.MSG_RESPONSE,
+                        userType: MessageUserType.Bot,
+                        userName: botReply.botName,
+                        message: botReply.message
+                    }
+                    socket.send(JSON.stringify(botMsg));
+                }
             }
         }
     }
@@ -191,187 +188,209 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
 //  Web
 //  --------------------------------------------------------
 
-const app = new Hono();
+const setupRoutes = () => {
+    //  Docs and status 
 
-//  Docs and status 
+    app.get('/openapi',
+        openAPISpecs(app, {
+            documentation: {
+                info: { title: 'Sloppy Chat API', version: '1.0.0', description: 'Simple websocket based chat server and client' },
+                servers: [
+                    { url: `${SERVER_URL}:${SERVER_PORT}`, description: 'Chat Server' },
+                ],
+            },
+        })
+    );
 
-app.get('/openapi', openAPISpecs(app, {
-    documentation: {
-        info: { title: 'Sloppy Chat API', version: '1.0.0', description: 'Simple websocket based chat server and client' },
-        servers: [
-            { url: `${SERVER_URL}:${SERVER_PORT}`, description: 'Chat Server' },
-        ],
-    },
-}));
+    app.get('/docs', apiReference({
+        theme: 'saturn',
+        spec: { url: '/openapi' },
+    }));
 
-app.get('/docs', apiReference({
-    theme: 'saturn',
-    spec: { url: '/openapi' },
-}));
+    //  Routes
 
-//  Routes
+    app.onError((err, c) => {
+        log.error(err);
+        c.status(500);
+        return c.json({ message: err.message, cause: err.cause, stack: err.stack });
+    });
 
-app.onError((err, c) => {
-    log.error(err);
-    c.status(500);
-    return c.json({ message: err.message, cause: err.cause, stack: err.stack });
-});
+    const StatusResponse = v.object({
+        clients: v.number()
+    });
 
-const StatusResponse = v.object({
-    clients: v.number()
-});
-
-app.get("/status",
-    describeRoute({
-        description: "Server status",
-        responses: {
-            200: { description: "Success", content: { 'application/json': { schema: resolver(StatusResponse) } } }
-        }
-    }),
-    async (c) => {
-        return c.json({
-            clients: clients.size
-        });
-    }
-);
-
-const ChatKickRequest = v.object({
-    adminKey: v.string(),
-    userId: v.optional(v.string()),
-    name: v.optional(v.string())
-});
-
-const ChatKickResponse = v.object({
-    message: v.optional(v.string()),
-    success: v.boolean(),
-});
-
-app.get('/chat/kick',
-    describeRoute({
-        description: "Kicks the user out of the chat",
-        responses: {
-            200: { description: "Success", content: { 'application/json': { schema: resolver(ChatKickResponse) } } }
-        }
-    }),
-    validator('query', ChatKickRequest),
-    async (c) => {
-        const key = c.req.query("adminKey");
-        const id = c.req.query("id");
-        const reqName = c.req.query("name");
-
-        if (key !== ADMIN_KEY) {
-            log.warn("Invalid admin key");
-            return c.json({
-                message: "Invalid admin key",
-                success: false
-            });
-        }
-
-        if (!id && !reqName) {
-            log.warn("No user specified");
-            return c.json({
-                message: "No user specified",
-                success: false
-            });
-        }
-
-        log.info(`Kicking user ${reqName} with id ${id}`);
-
-        for (const { userId, name, socket } of clients.values()) {
-            if (userId === id || reqName === name) {
-
-                //  Inform user (but ignore any possible excption)
-                try {
-                    const kick: ChatUserKick = {
-                        type: MessageType.USER_KICK,
-                        message: "You have been kicked from the chat"
-                    }
-                    socket.send(JSON.stringify(kick));
-
-                    socket.close();
-                    clients.delete(userId);
-                } catch (err) { }
-
-                activeBans.set(socket.remoteAddress, true);
-                break;
+    app.get("/status",
+        describeRoute({
+            description: "Server status",
+            responses: {
+                200: { description: "Success", content: { 'application/json': { schema: resolver(StatusResponse) } } }
             }
-        }
-
-        return c.json({
-            success: true
-        });
-    }
-);
-
-const ChatRestoreAccess = v.object({
-    adminKey: v.string(),
-    ip: v.string(),
-});
-
-app.get("/chat/restore",
-    describeRoute({
-        description: "Removes a ban for an IP",
-        responses: {
-            200: { description: "Success", content: { 'application/json': { schema: resolver(ChatKickResponse) } } }
-        }
-    }),
-    validator('query', ChatRestoreAccess),
-    async (c) => {
-        const key = c.req.query("adminKey");
-        const ip = c.req.query("ip");
-
-        if (key !== ADMIN_KEY) {
-            log.warn("Invalid admin key");
+        }),
+        async (c) => {
             return c.json({
-                message: "Invalid admin key",
-                success: false
+                clients: clients.size
             });
         }
+    );
 
-        if (!activeBans.has(ip!)) {
-            log.warn(`IP ${ip} not banned`);
+    const ChatKickRequest = v.object({
+        adminKey: v.string(),
+        userId: v.optional(v.string()),
+        name: v.optional(v.string())
+    });
+
+    const ChatKickResponse = v.object({
+        message: v.optional(v.string()),
+        success: v.boolean(),
+    });
+
+    app.get('/chat/kick',
+        describeRoute({
+            description: "Kicks the user out of the chat",
+            responses: {
+                200: { description: "Success", content: { 'application/json': { schema: resolver(ChatKickResponse) } } }
+            }
+        }),
+        validator('query', ChatKickRequest),
+        async (c) => {
+            const key = c.req.query("adminKey");
+            const id = c.req.query("id");
+            const reqName = c.req.query("name");
+
+            if (key !== ADMIN_KEY) {
+                log.warn("Invalid admin key");
+                return c.json({
+                    message: "Invalid admin key",
+                    success: false
+                });
+            }
+
+            if (!id && !reqName) {
+                log.warn("No user specified");
+                return c.json({
+                    message: "No user specified",
+                    success: false
+                });
+            }
+
+            log.info(`Kicking user ${reqName} with id ${id}`);
+
+            for (const { userId, name, socket } of clients.values()) {
+                if (userId === id || reqName === name) {
+
+                    //  Inform user (but ignore any possible excption)
+                    try {
+                        const kick: ChatUserKick = {
+                            type: MessageType.USER_KICK,
+                            message: "You have been kicked from the chat"
+                        }
+                        socket.send(JSON.stringify(kick));
+
+                        socket.close();
+                        clients.delete(userId);
+                    } catch (err) { }
+
+                    activeBans.set(socket.remoteAddress, true);
+                    break;
+                }
+            }
+
             return c.json({
-                message: "IP not banned",
-                success: false
+                success: true
             });
         }
+    );
 
-        log.info(`Banning IP ${ip}`);
+    const ChatRestoreAccess = v.object({
+        adminKey: v.string(),
+        ip: v.string(),
+    });
 
-        activeBans.delete(ip!);
+    app.get("/chat/restore",
+        describeRoute({
+            description: "Removes a ban for an IP",
+            responses: {
+                200: { description: "Success", content: { 'application/json': { schema: resolver(ChatKickResponse) } } }
+            }
+        }),
+        validator('query', ChatRestoreAccess),
+        async (c) => {
+            const key = c.req.query("adminKey");
+            const ip = c.req.query("ip");
 
-        return c.json({
-            success: true
-        });
-    }
-);
+            if (key !== ADMIN_KEY) {
+                log.warn("Invalid admin key");
+                return c.json({
+                    message: "Invalid admin key",
+                    success: false
+                });
+            }
 
-app.get("/",
-    (c) => {
-        log.debug("Root page request");
-        return c.html("Hello to Sloppy Chat. Click here for <a href='/docs'> API </a>.");
-    }
-);
+            if (!activeBans.has(ip!)) {
+                log.warn(`IP ${ip} not banned`);
+                return c.json({
+                    message: "IP not banned",
+                    success: false
+                });
+            }
+
+            log.info(`Banning IP ${ip}`);
+
+            activeBans.delete(ip!);
+
+            return c.json({
+                success: true
+            });
+        }
+    );
+
+    app.get("/",
+        (c) => {
+            log.debug("Root page request");
+            return c.html("Hello to Sloppy Chat. Click here for <a href='/docs'> API </a>.");
+        }
+    );
+}
 
 //  --------------------------------------------------------
 //  Server boostrap
 //  --------------------------------------------------------
-log.debug(`Starting server on port ${SERVER_PORT}`);
 
-const server = serve({
-    fetch: (req, server) => {
-        if (req.headers.get("upgrade") === "websocket") {
-            server.upgrade(req);
-            return;
-        }
-        return app.fetch(req, server);
-    },
-    port: SERVER_PORT,
-    websocket: {
-        open(ws) { onConnect(ws) },
-        close(ws) { onDisconnect(ws) },
-        async message(ws, message) { await onMessage(ws, message) }
+const startServer = (): Server => {
+
+    setupRoutes();
+
+    const resetLimit = () => {
+        log.info("Rate limiter reset");
+        limiter.clear();
+        setTimeout(resetLimit, limiterMs);
     }
-});
+    setTimeout(resetLimit, limiterMs);
 
-log.info(`Server listening on ${server.url}`);
+    log.debug(`Starting server on port ${SERVER_PORT}`);
+    const server = serve({
+        fetch: (req, server) => {
+            if (req.headers.get("upgrade") === "websocket") {
+                server.upgrade(req);
+                return;
+            }
+            return app.fetch(req, server);
+        },
+        port: SERVER_PORT,
+        websocket: {
+            open(ws) { onConnect(ws) },
+            close(ws) { onDisconnect(ws) },
+            async message(ws, message) { await onMessage(ws, message) }
+        }
+    });
+
+    log.info(`Server listening on ${server.url}`);
+
+    return server;
+}
+
+export {
+    app,
+    bots,
+    startServer
+}

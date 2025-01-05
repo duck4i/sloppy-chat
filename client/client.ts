@@ -7,9 +7,9 @@ export type OnDisconnected = () => void;
 export type OnNameChange = (newName: string, success: boolean) => void;
 
 const USER_NAME_STORAGE_ID = "sloppychat-username";
-enum ClientState { Disconnected, Connected, InSession, Connecting, Reconnecting }
+export enum ClientState { Disconnected, Connected, InSession, Connecting, Reconnecting }
 
-class Client {
+export class Client {
     server: string;
     socket: WebSocket | null = null;
 
@@ -185,4 +185,3 @@ class Client {
     }
 }
 
-const localhostClient = new Client("ws://localhost:8080");

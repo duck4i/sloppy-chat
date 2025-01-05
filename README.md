@@ -88,10 +88,10 @@ bun install
 To run:
 
 ```bash
-bun run server/server.ts
+bash start.sh
 ```
 
 To generate JS client to use in HTML pages
 ```bash
- bun build ./client/client.ts --outfile  ./client/client.js
+bash build.sh
 ```

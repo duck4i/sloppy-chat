@@ -120,7 +120,7 @@
 </head>
 
 <body>
-    <script src="./client/client.js"></script>
+    <script src="./chat_client.js"></script>
     <div id="chat-container">
         <ul id="messages"></ul>
     </div>
@@ -136,25 +136,24 @@
 
     <script>
 
-        const chatClient = new Client("ws://localhost:8080");
-        chatClient.connect();
+        localhostClient.connect();
 
-        chatClient.onConnected((name) => {
+        localhostClient.onConnected((name) => {
             console.log("CLIENT - got name", name);
             addMessage("Connected...", "system")
         });
 
-        chatClient.onDisconnected(() => {
+        localhostClient.onDisconnected(() => {
             console.log("CLIENT - close");
             addMessage("Disconnected.", "system")
         });
 
-        chatClient.onMessage((from, text, type) => {
+        localhostClient.onMessage((from, text, type) => {
             console.log(`CLIENT message ${from}: ${text} (${type})`);
             addMessage(text, type === 1 ? 'bot' : 'received', from);
         });
         
-        chatClient.onNameChange((name, success) => {
+        localhostClient.onNameChange((name, success) => {
             console.log(`CLIENT name change ${name}: ${success}`);
             addMessage(success ? `Name changed to ${name}` : `Name change failed`, 'system');
         });
@@ -183,7 +182,7 @@
 
         document.getElementById('btnChangeName').onclick = function () {
             const name = prompt("Enter your name");
-            chatClient.changeName(name);
+            localhostClient.changeName(name);
         }
 
         // Send message on form submit
@@ -193,7 +192,7 @@
             const message = input.value.trim();
 
             if (message) {
-                chatClient.send(message);
+                localhostClient.send(message);
                 addMessage(message, "sent");
                 input.value = '';
             }

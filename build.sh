@@ -1,2 +1,2 @@
 bun install
-bun build ./client/client.ts --outfile ./client/client.js 
+bun build ./html/chat_client.ts --outfile ./html/chat_client.js

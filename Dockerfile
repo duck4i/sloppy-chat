@@ -12,4 +12,4 @@ ENV CHAT_SERVER_URL="http://localhost"
 
 EXPOSE $CHAT_SERVER_PORT
 
-CMD ["bun", "run", "./server/server.ts"]
+CMD ["bun", "run", "index.ts"]
