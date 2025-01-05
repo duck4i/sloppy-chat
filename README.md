@@ -1,22 +1,12 @@
 # sloppy-chat
 
-This is a modern and performant chat server and client system, made for Slopify.dev.
+This is a modern and performant chat server and client system, originally made for Slopify.dev.
 
 Its super simple and designed to be as accessible for editing by community but still providing basic security features:
 - No chat user name duplication
 - Rate limiting and spam prevention 
-- Server API for kicking users and banning IPs 
-
-The server comes with the UI to trigger routes for basic admin operations like user removal and banning.
-
-While there is nothing wrong with it, it was designed for fun so all users have `slop-` prefix names until authenticated via OAuth. This behaviour is controllable with evn variables.
-
-It also supports bots creation by extending `!command` message format. 
-
-# Admin authentication 
-
-Server API that requires admin permissions simply requests user key (pass) as set by `CHAT_ADMIN_KEY` variable.
-This is usually done in `.env` file.
+- Server API for kicking users and banning IPs (with UI for docs)
+- Bots creation by extending `!command` message format. 
 
 # Client 
 
@@ -76,6 +66,13 @@ The API comes with docs UI for testing, you can set the server URL via the `CHAT
 Status route shows the count of connected users.
 
 ![Kick User](./doc/kick.png)
+
+
+## Admin authentication 
+
+Server API that requires admin permissions simply requests user key (pass) as set by `CHAT_ADMIN_KEY` variable.
+This is usually done in `.env` file.
+
 
 # Usage 
 
