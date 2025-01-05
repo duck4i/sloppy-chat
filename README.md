@@ -60,7 +60,7 @@ const server = startServer();
 ## Client 
 
 ```
-bun install @duck4i/sloppy-chat-server
+bun install @duck4i/sloppy-chat-client
 ```
 
 ```typescript
