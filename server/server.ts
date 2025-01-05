@@ -12,8 +12,8 @@ import type {
     ChatUserKick,
     ChatUserNameChange,
     ChatUserNameChangeAck
-} from "./messages";
-import { MessageType, MessageUserType } from "./messages";
+} from "../common/messages";
+import { MessageType, MessageUserType } from "../common/messages";
 import { type BotProcessFunction } from "./bots";
 
 //  set in .env file, used for admin routes
