@@ -5,10 +5,11 @@ COPY . .
 
 RUN bun install
 
-ARG CHAT_ADMIN_KEY
+ENV CHAT_ANON_PREFIX=""
+ENV CHAT_ADMIN_KEY="your_admin_key"
+ENV CHAT_SERVER_PORT=8080
+ENV CHAT_SERVER_URL="http://localhost"
 
-ENV CHAT_ADMIN_KEY=$CHAT_ADMIN_KEY
-
-EXPOSE 8080 
+EXPOSE $CHAT_SERVER_PORT
 
 CMD ["bun", "run", "./server/server.ts"]

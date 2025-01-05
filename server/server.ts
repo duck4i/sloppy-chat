@@ -18,12 +18,12 @@ import { processBot } from "./bots";
 
 //  set in .env file, used for admin routes
 const ADMIN_KEY = process.env.CHAT_ADMIN_KEY;
-const ANON_PREFIX = process.env.ANON_PREFIX || "slop-";
+const SERVER_PORT = process.env.CHAT_SERVER_PORT || 8080;
+const SERVER_URL = process.env.CHAT_SERVER_URL || `http://localhost`;
+const ANON_PREFIX = process.env.CHAT_ANON_PREFIX || "";
+
 const RATE_LIMIT_MSG_PER_MINUTE = 20;   // 20 messages per minute
 const RATE_LIMIT_RESET_MINUTES = 60;    // resets every hour
-
-const httpPort = 8080;
-const app = new Hono();
 
 //  --------------------------------------------------------
 //  Sockets
@@ -133,16 +133,16 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
 
         //  Broadcast to all
         for (const { userId, socket } of clients.values()) {
-            const senderItself = req.userId === userId; 
-            
+            const senderItself = req.userId === userId;
+
             if (!senderItself) {
-                socket.send(JSON.stringify(rp));    
+                socket.send(JSON.stringify(rp)); // no need to return message to sender    
             }
 
-            if (botReply){
-                if (botReply.onlyToSender && !senderItself) 
+            if (botReply) {
+                if (botReply.onlyToSender && !senderItself)
                     continue;
-                
+
                 const botMsg: ChatMessage = {
                     type: MessageType.MSG_RESPONSE,
                     userType: MessageUserType.Bot,
@@ -191,12 +191,16 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
 //  Web
 //  --------------------------------------------------------
 
+const app = new Hono();
+
 //  Docs and status 
 
 app.get('/openapi', openAPISpecs(app, {
     documentation: {
         info: { title: 'Sloppy Chat API', version: '1.0.0', description: 'Simple websocket based chat server and client' },
-        servers: [{ url: `http://localhost:${httpPort}`, description: 'Local Server' }],
+        servers: [
+            { url: `${SERVER_URL}:${SERVER_PORT}`, description: 'Chat Server' },
+        ],
     },
 }));
 
@@ -352,7 +356,7 @@ app.get("/",
 //  --------------------------------------------------------
 //  Server boostrap
 //  --------------------------------------------------------
-log.debug(`Starting server on port ${httpPort}`);
+log.debug(`Starting server on port ${SERVER_PORT}`);
 
 const server = serve({
     fetch: (req, server) => {
@@ -362,7 +366,7 @@ const server = serve({
         }
         return app.fetch(req, server);
     },
-    port: httpPort,
+    port: SERVER_PORT,
     websocket: {
         open(ws) { onConnect(ws) },
         close(ws) { onDisconnect(ws) },

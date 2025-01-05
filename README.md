@@ -56,11 +56,19 @@ Client is TS but is auto transpiled to JS for funky HTML action.
 
 # Docker 
 
-There is published Docker image for the server in case you need it.
+There is published Docker image for the server in case you need it. This project provides a docker-compose setup too.
 
 https://hub.docker.com/r/duck4i/sloppy-chat
 
+Environment variables:
+* CHAT_SERVER_PORT - port server listens on (defaults to 8080)
+* CHAT_SERVER_URL - URL of server without port (defaults to http://localhost) 
+* CHAT_ADMIN_KEY - key string used for server operations like removing users
+* CHAT_ANON_PREFIX - users prefix (defaults to empty)
+
 # API
+
+The API comes with docs UI for testing, you can set the server URL via the `CHAT_SERVER_URL` env variable.
 
 * Main route shows welcome with API link at http://localhost:8080/
 * API Docs http://localhost:8080/docs (use this to kick users out)
