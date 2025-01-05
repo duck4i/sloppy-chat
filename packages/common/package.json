@@ -8,8 +8,8 @@
         "dist"
     ],
     "scripts": {
-        "build": "rm *.tsbuildinfo 2> /dev/null || true && tsc",
-        "clean": "rm *.tsbuildinfo 2> /dev/null || true && rm -rf dist",
+        "build": "rm -rf *.tsbuildinfo || true && tsc",
+        "clean": "rm -rf *.tsbuildinfo && rm -rf dist && rm -rf node_modules",
         "test": "echo \"No tests yet\"",
         "typecheck": "tsc --noEmit"
     },
@@ -18,5 +18,8 @@
     },
     "publishConfig": {
         "access": "public"
+    },
+    "devDependencies": {
+        "typescript": "^5.7.2"
     }
 }

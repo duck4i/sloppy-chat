@@ -9,7 +9,7 @@
     ],
     "scripts": {
         "build": "rm *.tsbuildinfo 2> /dev/null || true && tsc",
-        "clean": "rm *.tsbuildinfo 2> /dev/null || true && rm -rf dist",
+        "clean": "rm -rf *.tsbuildinfo && rm -rf dist && rm -rf node_modules",
         "test": "echo \"No tests yet\"",
         "typecheck": "tsc --noEmit"
     },
@@ -19,5 +19,8 @@
     "publishConfig": {
         "access": "public",
         "linkWorkspacePackages": true
+    },
+    "devDependencies": {
+        "typescript": "^5.7.2"
     }
 }

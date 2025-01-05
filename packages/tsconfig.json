@@ -29,13 +29,13 @@
   },
   "references": [
     {
-      "path": "./packages/common"
+      "path": "./common"
     },
     {
-      "path": "./packages/client"
+      "path": "./client"
     },
     {
-      "path": "./packages/server"
+      "path": "./server"
     }
   ]
 }
