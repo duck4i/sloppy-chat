@@ -1,4 +1,5 @@
 {
+  "version": "0.2.2",
   "name": "@duck4i/sloppy-chat",
   "private": true,
   "module": "index.ts",
