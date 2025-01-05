@@ -1,12 +1,16 @@
 {
     "name": "@duck4i/sloppy-chat-client",
-    "version": "0.2.5",
+    "version": "0.2.7",
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "files": [
         "dist"
     ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/duck4i/sloppy-chat"
+    },
     "scripts": {
         "build": "rm *.tsbuildinfo 2> /dev/null || true && tsc",
         "clean": "rm -rf *.tsbuildinfo && rm -rf dist && rm -rf node_modules",
