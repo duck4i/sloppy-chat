@@ -19,7 +19,7 @@ export class Client {
     socket: WebSocket | null = null;
 
     reconnectInterval: number = 1000;
-    reconnectHandle: Timer | null = null;
+    reconnectHandle: any = null;
 
     userId: string | null = null;
     userName: string | null = null;

@@ -1,5 +1,5 @@
 {
-    "extends": "../../tsconfig.json",
+    "extends": "../tsconfig.json",
     "compilerOptions": {
         "outDir": "./dist",
         "rootDir": "./src",
@@ -8,8 +8,7 @@
     "references": [
     ],
     "include": [
-        "src/**/*",
-        "../common/src/log.ts"
+        "src/**/*.ts",
     ],
     "exclude": [
         "node_modules",
