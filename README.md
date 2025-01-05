@@ -51,9 +51,9 @@ const examplePingBot = async (ws: ServerWebSocket<unknown>, message: string, use
 }
 Bots.push(examplePingBot);
 
-const server = startServer();
+const server = startServer(/*{options}*/);
 
-//  server will now be running 
+//  ... server will now be running 
 
 ```
 
@@ -118,8 +118,8 @@ pnpm install
 pnpm -r build
 ```
 
-To run test server navigate to the packages/runner:
+To run test server navigate to the packages/server/src:
 
 ```bash
-bun run start
+bun run test-run.ts
 ```

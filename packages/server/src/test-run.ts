@@ -1,4 +1,4 @@
-import { app, bots, startServer, type BotProcessReturn, type BotReply } from "@duck4i/sloppy-chat-server";
+import { app, bots, startServer, type BotProcessReturn, type BotReply } from "./index";
 import type { ServerWebSocket } from "bun";
 
 const addBot = () => {
@@ -29,4 +29,6 @@ const extendRoutes = () => {
 addBot();
 extendRoutes();
 
-const server = startServer();
+const server = startServer({
+    port: 8090
+});

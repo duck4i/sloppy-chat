@@ -15,12 +15,6 @@ import { resolver, validator } from "hono-openapi/valibot";
 import * as v from 'valibot';
 import { type BotProcessFunction } from "./bots";
 
-//  set in .env file, used for admin routes
-const ADMIN_KEY = process.env.CHAT_ADMIN_KEY;
-const SERVER_PORT = process.env.CHAT_SERVER_PORT || 8080;
-const SERVER_URL = process.env.CHAT_SERVER_URL || `http://localhost`;
-const ANON_PREFIX = process.env.CHAT_ANON_PREFIX || "";
-
 const RATE_LIMIT_MSG_PER_MINUTE = 20;   // 20 messages per minute
 const RATE_LIMIT_RESET_MINUTES = 60;    // resets every hour
 const limiterMs = RATE_LIMIT_RESET_MINUTES * 60 * 1000;
@@ -187,7 +181,7 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
 //  Web
 //  --------------------------------------------------------
 
-const setupRoutes = () => {
+const setupRoutes = (url: string, port: number, admin_key: string) => {
     //  Docs and status 
 
     app.get('/openapi',
@@ -195,7 +189,7 @@ const setupRoutes = () => {
             documentation: {
                 info: { title: 'Sloppy Chat API', version: '1.0.0', description: 'Simple websocket based chat server and client' },
                 servers: [
-                    { url: `${SERVER_URL}:${SERVER_PORT}`, description: 'Chat Server' },
+                    { url: `${url}:${port}`, description: 'Chat Server' },
                 ],
             },
         })
@@ -256,7 +250,7 @@ const setupRoutes = () => {
             const id = c.req.query("id");
             const reqName = c.req.query("name");
 
-            if (key !== ADMIN_KEY) {
+            if (key !== admin_key) {
                 log.warn("Invalid admin key");
                 return c.json({
                     message: "Invalid admin key",
@@ -317,7 +311,7 @@ const setupRoutes = () => {
             const key = c.req.query("adminKey");
             const ip = c.req.query("ip");
 
-            if (key !== ADMIN_KEY) {
+            if (key !== admin_key) {
                 log.warn("Invalid admin key");
                 return c.json({
                     message: "Invalid admin key",
@@ -355,9 +349,22 @@ const setupRoutes = () => {
 //  Server boostrap
 //  --------------------------------------------------------
 
-const startServer = (): Server => {
+export interface ServerParams {
+    port?: number;
+    url?: string;
+    admin_key?: string;
+    anon_prefix?: string;
+}
 
-    setupRoutes();
+const startServer = (options?: ServerParams): Server => {
+
+    //  set in .env file, used for admin routes
+    const ADMIN_KEY = options?.admin_key ?? process.env.CHAT_ADMIN_KEY ?? "your_api_key";
+    const SERVER_PORT = options?.port ?? parseInt(process.env.CHAT_SERVER_PORT ?? "8080");
+    const SERVER_URL = options?.url ?? process.env.CHAT_SERVER_URL ?? `http://localhost`;
+    const ANON_PREFIX = options?.anon_prefix ?? process.env.CHAT_ANON_PREFIX ?? "";
+
+    setupRoutes(SERVER_URL, +SERVER_PORT, ADMIN_KEY);
 
     const resetLimit = () => {
         log.info("Rate limiter reset");
@@ -367,6 +374,7 @@ const startServer = (): Server => {
     setTimeout(resetLimit, limiterMs);
 
     log.debug(`Starting server on port ${SERVER_PORT}`);
+
     const server = serve({
         fetch: (req, server) => {
             if (req.headers.get("upgrade") === "websocket") {
