@@ -24,17 +24,17 @@ Environment variables:
 
 # NPM 
 
-Install the module to your Bun application.
-
-```
-bun install @duck4i/sloppy-chat
-```
+You can consume both client and server inside your own apps.
 
 ## Server usage
 
+```
+bun install @duck4i/sloppy-chat-server
+```
+
 ```typescript
 
-import { App, Bots, startServer, type BotProcessReturn, type BotReply } from "@duck4i/sloppy-chat";
+import { App, Bots, startServer, type BotProcessReturn, type BotReply } from "@duck4i/sloppy-chat-server";
 import type { ServerWebSocket } from "bun";
 
 //  Optional bot creation
@@ -59,11 +59,13 @@ const server = startServer();
 
 ## Client 
 
-The client is very straightforward for use:
+```
+bun install @duck4i/sloppy-chat-server
+```
 
 ```typescript
 
-import { Client } from "@duck4i/sloppy-chat";
+import { Client } from "@duck4i/sloppy-chat-client";
 
 const chatClient = new Client("ws://localhost:8080");
 chatClient.connect();
@@ -91,27 +93,19 @@ chatClient.onNameChange((name, success) => {
 
 ```
 
-The client is built in TS but is also transpiled into JS if you need to use it in HTML files.
-
-JavaScript file is [here](./html/chat_client.js). See usage exmple [here](./html/chat.html)
-
 # API
 
 The API comes with docs UI for testing, you can set the server URL via the `CHAT_SERVER_URL` env variable.
 
 * Main route shows welcome with API link at http://localhost:8080/
-* API Docs http://localhost:8080/docs (use this to kick users out)
+* API Docs UI http://localhost:8080/docs (use this to kick users out)
 
 Status route shows the count of connected users.
-
-![Kick User](./doc/kick.png)
-
 
 ## Admin authentication 
 
 Server API that requires admin permissions simply requests user key (pass) as set by `CHAT_ADMIN_KEY` variable.
 This is usually done in `.env` file.
-
 
 # Development 
 
@@ -120,17 +114,12 @@ This is usually done in `.env` file.
 To install dependencies:
 
 ```bash
-bun install
-bun run build
+pnpm install
+pnpm -r build
 ```
 
-To run:
+To run test server navigate to the packages/runner:
 
 ```bash
-bun start
-```
-
-To generate JS client to use in HTML pages
-```bash
-bash build.sh
+bun run start
 ```
