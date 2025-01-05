@@ -1,6 +1,6 @@
 {
     "name": "@duck4i/sloppy-chat-server",
-    "version": "0.2.7",
+    "version": "0.2.8",
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -9,7 +9,7 @@
     ],
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/duck4i/sloppy-chat"
+        "url": "git+https://github.com/duck4i/sloppy-chat.git"
     },
     "scripts": {
         "build": "rm *.tsbuildinfo 2> /dev/null || true && tsc",
