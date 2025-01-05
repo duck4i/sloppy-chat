@@ -1,5 +1,6 @@
-import { app, bots, startServer } from "./server/server";
-import type { BotProcessFunction, BotProcessReturn, BotReply } from "./server/bots";
+import { app, bots, startServer } from "@duck4i/sloppy-chat-server";
+import type { BotProcessFunction, BotProcessReturn, BotReply} from "@duck4i/sloppy-chat-server";
+
 import type { ServerWebSocket } from "bun";
 
 const examplePingBot = async (ws: ServerWebSocket<unknown>, message: string, userName: string, userId: string): BotProcessReturn => {
