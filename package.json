@@ -1,6 +1,6 @@
 {
   "version": "0.2.2",
-  "name": "sloppy-chat",
+  "name": "@duck4i/sloppy-chat",
   "module": "index.ts",
   "type": "module",
   "devDependencies": {

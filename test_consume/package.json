@@ -1,0 +1,14 @@
+{
+  "name": "test-consume",
+  "module": "index.ts",
+  "type": "module",
+  "dependencies": {
+    "@duck4i/sloppy-chat" : "file:.."
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

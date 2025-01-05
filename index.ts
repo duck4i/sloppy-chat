@@ -1,19 +1,19 @@
 import { app, bots, startServer } from "./server/server";
+import { Client, type OnConnected, type OnDisconnected, type OnChatRecieved, type OnNameChange } from "./client/client";
 import type { BotProcessFunction, BotProcessReturn, BotReply } from "./server/bots";
-import type { ServerWebSocket } from "bun";
 
-const examplePingBot = async (ws: ServerWebSocket<unknown>, message: string, userName: string, userId: string): BotProcessReturn => {
-    if (message === "!ping") {
-        const rp: BotReply = {
-            botName: "~SloppyPong~",
-            message: "Pong!",
-            onlyToSender: false
-        };
-        return rp;
-    }
-    return null;
+export {
+    app as App,
+    bots as Bots,
+    startServer,
+
+    Client,
+    type OnConnected,
+    type OnDisconnected,
+    type OnChatRecieved,
+    type OnNameChange,
+
+    type BotProcessFunction,
+    type BotProcessReturn,
+    type BotReply
 }
-
-bots.push(examplePingBot);
-
-const server = startServer();

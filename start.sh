@@ -1,2 +1,2 @@
 bun install
-bun run index.ts
+bun run start.ts
