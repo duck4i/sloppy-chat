@@ -1,4 +1,4 @@
-import { App, Bots, startServer, type BotProcessReturn, type BotReply } from "@duck4i/sloppy-chat";
+import { app, bots, startServer, type BotProcessReturn, type BotReply } from "@duck4i/sloppy-chat-server";
 import type { ServerWebSocket } from "bun";
 
 const addBot = () => {
@@ -13,11 +13,11 @@ const addBot = () => {
         }
         return null;
     }
-    Bots.push(examplePingBot);
+    bots.push(examplePingBot);
 }
 
 const extendRoutes = () => {
-    App.get("/new-route",
+    app.get("/new-route",
         async c => {
             return c.json({
                 success: true

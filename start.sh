@@ -1,2 +1,3 @@
 bun install
-bun run start.ts
+bun run build
+bun start

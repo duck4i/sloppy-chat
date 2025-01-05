@@ -121,12 +121,13 @@ To install dependencies:
 
 ```bash
 bun install
+bun run build
 ```
 
 To run:
 
 ```bash
-bash start.sh
+bun start
 ```
 
 To generate JS client to use in HTML pages

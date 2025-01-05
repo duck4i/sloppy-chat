@@ -8,8 +8,8 @@
         "dist"
     ],
     "scripts": {
-        "build": "rm *.tsbuildinfo 2> /dev/null || true && tsc",
-        "clean": "rm -rf dist && rm *.tsbuildinfo 2> /dev/null || true",
+        "build": "bun build ./src/*.ts --outdir dist --target node",
+        "clean": "rm -rf dist",
         "test": "echo \"No tests yet\"",
         "typecheck": "tsc --noEmit"
     },

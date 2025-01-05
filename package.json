@@ -11,12 +11,18 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build:common && npm run build:client && npm run build:server",
-    "build:common": "npm run build -w @duck4i/sloppy-chat-common",
-    "build:client": "npm run build -w @duck4i/sloppy-chat-client",
-    "build:server": "npm run build -w @duck4i/sloppy-chat-server",
-    "test": "npm run test --workspaces",
-    "clean": "npm run clean --workspaces",
-    "publish-packages": "npm run build && npm publish --workspaces --access public"
+    "start": "bun run --cwd packages/runner start",
+    "build": "bun run build:common && bun run build:client && bun run build:server && bun run build:runner",
+    "build:common": "bun run --cwd packages/common build",
+    "build:client": "bun run --cwd packages/client build",
+    "build:server": "bun run --cwd packages/server build",
+    "build:runner": "bun run --cwd packages/runner build",
+    "test": "bun test --workspace",
+    "clean": "bun run clean:common && bun run clean:client && bun run clean:server && bun run clean:runner",
+    "clean:common": "bun run --cwd packages/common clean",
+    "clean:client": "bun run --cwd packages/client clean",
+    "clean:server": "bun run --cwd packages/server clean",
+    "clean:runner": "bun run --cwd packages/runner clean",
+    "publish-packages": "bun run build && bun publish --access public"
   }
 }
