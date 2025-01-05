@@ -3,7 +3,7 @@
   "module": "index.ts",
   "type": "module",
   "dependencies": {
-    "@duck4i/sloppy-chat" : "file:.."
+    "@duck4i/sloppy-chat" : "file:../packages/server"
   },
   "devDependencies": {
     "@types/bun": "latest"

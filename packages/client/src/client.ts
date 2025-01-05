@@ -1,5 +1,10 @@
-import type { ChatMessage, ChatMessageRequest, ChatUserConnectedAck, ChatUserCreateSession, ChatUserNameChangeAck, ChatUserNameChange, MessageUserType } from "../server/messages";
-import { MessageType } from "../server/messages";
+import type {
+    ChatMessage, ChatMessageRequest, ChatUserConnectedAck, ChatUserCreateSession,
+    ChatUserNameChange,
+    ChatUserNameChangeAck,
+    MessageUserType
+} from "@duck4i/sloppy-chat-common";
+import { MessageType } from "@duck4i/sloppy-chat-common";
 
 export type OnChatRecieved = (from: string, message: string, userType: MessageUserType) => void;
 export type OnConnected = (username: string) => void;

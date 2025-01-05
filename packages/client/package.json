@@ -1,0 +1,19 @@
+{
+    "name": "@duck4i/sloppy-chat-client",
+    "version": "0.2.2",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "rm *.tsbuildinfo 2> /dev/null || true && tsc",
+        "clean": "rm -rf dist && rm *.tsbuildinfo 2> /dev/null || true",
+        "test": "echo \"No tests yet\"",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@duck4i/sloppy-chat-common": "workspace:*"
+    }
+}
