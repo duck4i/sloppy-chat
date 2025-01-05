@@ -1,5 +1,10 @@
-import type { ChatMessage, ChatMessageRequest, ChatUserConnectedAck, ChatUserCreateSession, ChatUserNameChangeAck, ChatUserNameChange, MessageUserType } from "../server/messages";
-import { MessageType } from "../server/messages";
+import type {
+    ChatMessage, ChatMessageRequest, ChatUserConnectedAck, ChatUserCreateSession,
+    ChatUserNameChange,
+    ChatUserNameChangeAck,
+    MessageUserType
+} from "@duck4i/sloppy-chat-common";
+import { MessageType } from "@duck4i/sloppy-chat-common";
 
 export type OnChatRecieved = (from: string, message: string, userType: MessageUserType) => void;
 export type OnConnected = (username: string) => void;
@@ -7,14 +12,14 @@ export type OnDisconnected = () => void;
 export type OnNameChange = (newName: string, success: boolean) => void;
 
 const USER_NAME_STORAGE_ID = "sloppychat-username";
-enum ClientState { Disconnected, Connected, InSession, Connecting, Reconnecting }
+export enum ClientState { Disconnected, Connected, InSession, Connecting, Reconnecting }
 
-class Client {
+export class Client {
     server: string;
     socket: WebSocket | null = null;
 
     reconnectInterval: number = 1000;
-    reconnectHandle: Timer | null = null;
+    reconnectHandle: any = null;
 
     userId: string | null = null;
     userName: string | null = null;
@@ -185,4 +190,3 @@ class Client {
     }
 }
 
-const localhostClient = new Client("ws://localhost:8080");

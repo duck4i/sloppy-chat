@@ -138,4 +138,6 @@ class Client {
     this.nameChangeCallback = callback;
   }
 }
+
+// html/chat_client.ts
 var localhostClient = new Client("ws://localhost:8080");

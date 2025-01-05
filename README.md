@@ -1,58 +1,14 @@
 # sloppy-chat
 
-This is a modern and performant chat server and client system, made for Slopify.dev.
+This is a modern and performant chat server and client system, originally made for Slopify.dev.
 
 Its super simple and designed to be as accessible for editing by community but still providing basic security features:
 - No chat user name duplication
 - Rate limiting and spam prevention 
-- Server API for kicking users and banning IPs 
+- Server API for kicking users and banning IPs (with UI for docs)
+- Bots creation by extending `!command` message format. 
 
-The server comes with the UI to trigger routes for basic admin operations like user removal and banning.
-
-While there is nothing wrong with it, it was designed for fun so all users have `slop-` prefix names until authenticated via OAuth. This behaviour is controllable with evn variables.
-
-It also supports bots creation by extending `!command` message format. 
-
-# Admin authentication 
-
-Server API that requires admin permissions simply requests user key (pass) as set by `CHAT_ADMIN_KEY` variable.
-This is usually done in `.env` file.
-
-# Client 
-
-Client is TS but is auto transpiled to JS for funky HTML action.
-
-```js
-
-    const chatClient = new Client("ws://localhost:8080");
-    chatClient.connect();
-
-    //  Actions
-    chatClient.send(message);
-    chatClient.changeName(name);
-
-    //  Callbacks
-    chatClient.onConnected((name) => {
-        console.log("CLIENT - got name", name);
-        addMessage("Connected...", "system")
-    });
-
-    chatClient.onDisconnected(() => {
-        console.log("CLIENT - close");
-        addMessage("Disconnected.", "system")
-    });
-
-    chatClient.onMessage((from, text, type /* 1 - Bot | 0 - User */) => {
-        console.log(`CLIENT message ${from}: ${text}`);
-        addMessage(text, 'received', from);
-    });
-    
-    chatClient.onNameChange((name, success) => {
-        console.log(`CLIENT name change ${name}: ${success}`);
-        addMessage(success ? `Name changed to ${name}` : `Name change failed`, 'system');
-    });
-
-```
+Server and client can be used trough the provided docker image or consumed in another Bun application.
 
 # Docker 
 
@@ -66,32 +22,104 @@ Environment variables:
 * CHAT_ADMIN_KEY - key string used for server operations like removing users
 * CHAT_ANON_PREFIX - users prefix (defaults to empty)
 
+# NPM 
+
+You can consume both client and server inside your own apps.
+
+## Server usage
+
+```
+bun install @duck4i/sloppy-chat-server
+```
+
+```typescript
+
+import { App, Bots, startServer, type BotProcessReturn, type BotReply } from "@duck4i/sloppy-chat-server";
+import type { ServerWebSocket } from "bun";
+
+//  Optional bot creation
+const examplePingBot = async (ws: ServerWebSocket<unknown>, message: string, userName: string, userId: string): BotProcessReturn => {
+    if (message === "!ping") {
+        const rp: BotReply = {
+            botName: "~SloppyPong~",
+            message: "Pong!",
+            onlyToSender: false
+        };
+        return rp;
+    }
+    return null;
+}
+Bots.push(examplePingBot);
+
+const server = startServer(/*{options}*/);
+
+//  ... server will now be running 
+
+```
+
+## Client 
+
+```
+bun install @duck4i/sloppy-chat-client
+```
+
+```typescript
+
+import { Client } from "@duck4i/sloppy-chat-client";
+
+const chatClient = new Client("ws://localhost:8080");
+chatClient.connect();
+
+//  Actions
+chatClient.send(message);
+chatClient.changeName(name);
+
+//  Callbacks
+chatClient.onConnected((name) => {
+    console.log("CLIENT - got name", name);
+});
+
+chatClient.onDisconnected(() => {
+    console.log("CLIENT - close");
+});
+
+chatClient.onMessage((from, text, type /* 1 - Bot | 0 - User */) => {
+    console.log(`CLIENT message ${from}: ${text}`);
+});
+
+chatClient.onNameChange((name, success) => {
+    console.log(`CLIENT name change ${name}: ${success}`);
+});
+
+```
+
 # API
 
 The API comes with docs UI for testing, you can set the server URL via the `CHAT_SERVER_URL` env variable.
 
 * Main route shows welcome with API link at http://localhost:8080/
-* API Docs http://localhost:8080/docs (use this to kick users out)
+* API Docs UI http://localhost:8080/docs (use this to kick users out)
 
 Status route shows the count of connected users.
 
-![Kick User](./doc/kick.png)
+## Admin authentication 
+
+Server API that requires admin permissions simply requests user key (pass) as set by `CHAT_ADMIN_KEY` variable.
+This is usually done in `.env` file.
+
+# Development 
 
 # Usage 
 
 To install dependencies:
 
 ```bash
-bun install
+pnpm install
+pnpm -r build
 ```
 
-To run:
+To run test server navigate to the packages/server/src:
 
 ```bash
-bun run server/server.ts
-```
-
-To generate JS client to use in HTML pages
-```bash
- bun build ./client/client.ts --outfile  ./client/client.js
+bun run test-run.ts
 ```
