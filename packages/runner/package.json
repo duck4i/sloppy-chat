@@ -1,7 +1,7 @@
 {
     "name": "@duck4i/sloppy-chat-runner",
     "private": true,
-    "version": "0.2.2",
+    "version": "0.2.3",
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -10,8 +10,6 @@
     ],
     "scripts": {
         "start" : "bun run ./src/index.ts",
-        "build": "bun build ./src/index.ts --outdir dist --target bun",
-        "clean": "rm -rf dist",
         "test": "echo \"No tests yet\"",
         "typecheck": "tsc --noEmit"
     },

@@ -1,5 +1,5 @@
 {
-  "version": "0.2.2",
+  "version": "0.2.3",
   "name": "@duck4i/sloppy-chat",
   "private": true,
   "module": "index.ts",
@@ -13,17 +13,17 @@
   ],
   "scripts": {
     "start": "bun run --cwd packages/runner start",
-    "build": "bun run build:common && bun run build:client && bun run build:server && bun run build:runner",
+    "build": "bun run build:common && bun run build:client && bun run build:server",
     "build:common": "bun run --cwd packages/common build",
     "build:client": "bun run --cwd packages/client build",
     "build:server": "bun run --cwd packages/server build",
     "build:runner": "bun run --cwd packages/runner build",
     "test": "bun test --workspace",
-    "clean": "bun run clean:common && bun run clean:client && bun run clean:server && bun run clean:runner",
+    "clean": "bun run clean:common && bun run clean:client && bun run clean:server",
     "clean:common": "bun run --cwd packages/common clean",
     "clean:client": "bun run --cwd packages/client clean",
     "clean:server": "bun run --cwd packages/server clean",
     "clean:runner": "bun run --cwd packages/runner clean",
-    "publish-packages": "bun run build && bun publish --access public"
+    "publish": "bun run build && pnpm publish --workspaces --no-private"
   }
 }

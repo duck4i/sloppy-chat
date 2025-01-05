@@ -8,8 +8,7 @@
     "references": [
     ],
     "include": [
-        "src/**/*",
-        "../common/src/log.ts"
+        "src/**/*.ts",
     ],
     "exclude": [
         "node_modules",

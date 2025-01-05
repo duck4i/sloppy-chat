@@ -1,6 +1,6 @@
 {
     "name": "@duck4i/sloppy-chat-common",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -8,12 +8,15 @@
         "dist"
     ],
     "scripts": {
-        "build": "bun build ./src/*.ts --outdir dist --target node",
-        "clean": "rm -rf dist",
+        "build": "rm *.tsbuildinfo 2> /dev/null || true && tsc",
+        "clean": "rm *.tsbuildinfo 2> /dev/null || true && rm -rf dist",
         "test": "echo \"No tests yet\"",
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "winston": "^3.17.0"
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }
