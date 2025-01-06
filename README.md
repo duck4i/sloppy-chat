@@ -14,7 +14,7 @@ The JS file for client is transpiled and provided as well for creating client UI
 
 # Docker 
 
-There is published Docker image for the server in case you need it. This project provides a docker-compose setup too.
+There is published Docker image with front end UI for the server in case you need it. This project provides a docker-compose setup too.
 
 https://hub.docker.com/r/duck4i/sloppy-chat
 
