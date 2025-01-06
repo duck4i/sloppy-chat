@@ -20,7 +20,6 @@ Environment variables:
 * CHAT_SERVER_PORT - port server listens on (defaults to 8080)
 * CHAT_SERVER_URL - URL of server without port (defaults to http://localhost) 
 * CHAT_ADMIN_KEY - key string used for server operations like removing users
-* CHAT_ANON_PREFIX - users prefix (defaults to empty)
 
 # NPM 
 
@@ -35,10 +34,9 @@ bun install @duck4i/sloppy-chat-server
 ```typescript
 
 import { App, Bots, startServer, type BotProcessReturn, type BotReply } from "@duck4i/sloppy-chat-server";
-import type { ServerWebSocket } from "bun";
 
 //  Optional bot creation
-const examplePingBot = async (ws: ServerWebSocket<unknown>, message: string, userName: string, userId: string): BotProcessReturn => {
+const examplePingBot = async (message: string, userName: string, userId: string): BotProcessReturn => {
     if (message === "!ping") {
         const rp: BotReply = {
             botName: "~SloppyPong~",
