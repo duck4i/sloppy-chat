@@ -4,11 +4,13 @@ const { downloadModel, LoadModelAsync, CreateContextAsync, RunInferenceAsync, Re
 import { ChatManager, Role } from "./chat";
 import fs from "fs"
 
-const system_prompt = "You are an assistant following chat between two individuals and trying to mediate between them, using motherly like words.";
+const system_prompt = "You are an mother following chat between two individuals and trying to mediate between them, using soothing words.";
 
 let model: any = null;
 let ctx: any = null;
 const chat = new ChatManager(system_prompt);
+
+let textSoFar = "";
 
 const bot = async (message: string, userName: string, userId: string): BotProcessReturn => {
 
@@ -26,9 +28,9 @@ const bot = async (message: string, userName: string, userId: string): BotProces
             ctx = await CreateContextAsync(model);
         }
 
-        const cleanMessage = `${userName}:${message.substring(4).trim()}`
-        console.log("Mes", cleanMessage);
+        const cleanMessage = `(${userName})${message.substring(4).trim()}`
         const formatted = chat.getNextPrompt(cleanMessage);
+        console.log("Mes", formatted);
 
         const inference = await RunInferenceAsync(model, ctx, formatted);
         chat.addMessage(Role.ASSISTANT, inference);
@@ -39,12 +41,14 @@ const bot = async (message: string, userName: string, userId: string): BotProces
             onlyToSender: false
         }
 
+        textSoFar = "";
+
         return repl;
     }
 
     return null;
 }
 
-//bots.push(bot);
+bots.push(bot);
 
 const server = startServerWithUI();
