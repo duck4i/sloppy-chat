@@ -1,4 +1,5 @@
 import { app, bots, startServer, createLogger, type BotProcessReturn, type BotReply, type ServerParams } from "@duck4i/sloppy-chat-server";
+import type { ChatProps } from "./chat";
 
 const startServerWithUI = (options?: ServerParams) => {
     const log = createLogger();
@@ -22,8 +23,8 @@ const startServerWithUI = (options?: ServerParams) => {
     addBot();
 
     const extendRoutes = () => {
-        const outDir = `${import.meta.dir}/build`;
 
+        const outDir = `${import.meta.dir}/build`;
         const compile = async () => {
             log.info(`Compiling react page...`);
 
@@ -45,6 +46,7 @@ const startServerWithUI = (options?: ServerParams) => {
 
         compile().then(() => {
             const jsRoute = "/chat/client.js";
+         
             app.get(jsRoute, async c => {
                 const file = Bun.file(`${outDir}/client.js`);
                 return c.text(await file.text(), 200, {
@@ -52,22 +54,34 @@ const startServerWithUI = (options?: ServerParams) => {
                 });
             });
 
+            const buildHtml = (url: string) => {
+                const props : ChatProps = {
+                    url: url
+                };
+                return `
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Sloppy Chat App</title>
+                    </head>
+                    <body>
+                        <div id="app"></div>
+                        <script type="module" src="${jsRoute}"></script>
+                    </body>
+                    <script>
+                        window.__INITIAL_PROPS__ = ${JSON.stringify(props)}
+                    </script>
+                    </html>
+                `
+            }
+
             app.get("/",
                 async c => {
-                    return c.html(`
-                <!DOCTYPE html>
-                <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Sloppy Chat App</title>
-                </head>
-                <body>
-                    <div id="app"></div>
-                    <script type="module" src="${jsRoute}"></script>
-                </body>
-                </html>
-            `);
+                    const host = c.req.header("Host")?.toString();
+                    console.log("HOST", host);
+                    return c.html(buildHtml(host!));
                 }
             );
         })

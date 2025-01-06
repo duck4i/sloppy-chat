@@ -9,7 +9,11 @@ interface Message {
     userType: MessageUserType | "self";
 }
 
-export default function Chat() {
+export interface ChatProps {
+    url: string;
+}
+
+export const Chat = (props:  ChatProps ) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [connected, setConnected] = useState(false);
     const [name, setName] = useState("");
@@ -22,7 +26,7 @@ export default function Chat() {
     });
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const client = useMemo(() => new Client("ws://localhost:8080"), []);
+    const client = useMemo(() => new Client(`ws://${props.url}`), []);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
