@@ -14,7 +14,10 @@ let textSoFar = "";
 
 const bot = async (message: string, userName: string, userId: string): BotProcessReturn => {
 
-    if (message.includes("dick")) {
+    const badWords = ["dick", "prick", "monster", "fuck", "hell", "retard", "cunt"];
+    const isNaughty = badWords.some(word => message.toLowerCase().includes(word));
+
+    if (isNaughty) {
 
         if (!fs.existsSync("model.gguf")) {
             await downloadModel(
