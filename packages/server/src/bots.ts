@@ -1,6 +1,3 @@
-//  This is to process the bot messages
-import { type ServerWebSocket } from "bun";
-
 export interface BotReply {
     botName: string;
     message: string;
@@ -8,5 +5,4 @@ export interface BotReply {
 }
 
 export type BotProcessReturn = Promise<BotReply | null>;
-export type BotProcessFunction = (ws: ServerWebSocket<unknown>, message: string, userName: string, userId: string) => BotProcessReturn;
-
+export type BotProcessFunction = (message: string, userName: string, userId: string) => BotProcessReturn;

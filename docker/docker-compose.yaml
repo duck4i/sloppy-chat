@@ -7,7 +7,6 @@ services:
     ports:
       - "8080:90"
     environment:
-      - CHAT_ANON_PREFIX=""
       - CHAT_SERVER_URL="http://localhost"
       - CHAT_SERVER_PORT=90
       - CHAT_ADMIN_KEY="your_admin_key"

@@ -1,8 +1,7 @@
 import { app, bots, startServer, type BotProcessReturn, type BotReply } from "./index";
-import type { ServerWebSocket } from "bun";
 
 const addBot = () => {
-    const examplePingBot = async (ws: ServerWebSocket<unknown>, message: string, userName: string, userId: string): BotProcessReturn => {
+    const examplePingBot = async ( message: string, userName: string, userId: string): BotProcessReturn => {
         if (message === "!ping") {
             const rp: BotReply = {
                 botName: "~SloppyPong~",
