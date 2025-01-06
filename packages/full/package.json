@@ -14,7 +14,7 @@
     "scripts": {
         "start": "bun run ./src/run.ts",
         "dev": "bun run --watch ./src/run.ts",
-        "build": "rm -rf *.tsbuildinfo && tsc && cp ./src/chat.tsx ./dist/chat.tsx",
+        "build": "rm -rf *.tsbuildinfo && tsc && cp ./src/*.tsx ./dist/",
         "clean": "rm -rf *.tsbuildinfo && rm -rf dist && rm -rf node_modules",
         "test": "echo \"No tests yet\"",
         "typecheck": "tsc --noEmit"
