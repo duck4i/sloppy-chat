@@ -4,7 +4,7 @@ const { downloadModel, LoadModelAsync, CreateContextAsync, RunInferenceAsync, Re
 import { ChatManager, Role } from "./chat";
 import fs from "fs"
 
-const system_prompt = "You are an mother following chat between two individuals and trying to mediate between them, using soothing words.";
+const system_prompt = "You are an mother following chat between two individuals and trying to mediate between them, using soothing but strong words.";
 
 let model: any = null;
 let ctx: any = null;
@@ -14,7 +14,7 @@ let textSoFar = "";
 
 const bot = async (message: string, userName: string, userId: string): BotProcessReturn => {
 
-    if (message.startsWith("!llm")) {
+    if (message.includes("dick")) {
 
         if (!fs.existsSync("model.gguf")) {
             await downloadModel(
@@ -28,9 +28,12 @@ const bot = async (message: string, userName: string, userId: string): BotProces
             ctx = await CreateContextAsync(model);
         }
 
-        const cleanMessage = `(${userName})${message.substring(4).trim()}`
-        const formatted = chat.getNextPrompt(cleanMessage);
-        console.log("Mes", formatted);
+        //const cleanMessage = `(${userName})${message.substring(4).trim()}`
+        //const formatted = chat.getNextPrompt(cleanMessage);
+        //console.log("Mes", formatted);
+
+        const clean = `This is the conversation so far\n${textSoFar}\n(${userName}:${message})`
+        const formatted = chat.getNextPrompt(clean);
 
         const inference = await RunInferenceAsync(model, ctx, formatted);
         chat.addMessage(Role.ASSISTANT, inference);
@@ -44,6 +47,8 @@ const bot = async (message: string, userName: string, userId: string): BotProces
         textSoFar = "";
 
         return repl;
+    } else {
+        textSoFar += `${userName}:${message}\n`;
     }
 
     return null;
