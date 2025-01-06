@@ -184,7 +184,7 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
 //  Web
 //  --------------------------------------------------------
 
-const setupRoutes = (url: string, port: number, admin_key: string) => {
+const setupRoutes = (url: string, port: number, admin_key: string, setDefaultRoute: boolean) => {
     //  Docs and status 
 
     app.get('/openapi',
@@ -339,6 +339,15 @@ const setupRoutes = (url: string, port: number, admin_key: string) => {
             });
         }
     );
+
+    if (setDefaultRoute) {
+        app.get("/",
+            (c) => {
+                log.debug("Root page request");
+                return c.html("Hello to Sloppy Chat. Click here for <a href='/docs'> API </a>.");
+            }
+        );
+    }
 }
 
 //  --------------------------------------------------------
@@ -349,6 +358,7 @@ export interface ServerParams {
     port?: number;
     url?: string;
     admin_key?: string;
+    setDefaultRoute?: boolean;
 }
 
 const startServer = (options?: ServerParams): Server => {
@@ -357,8 +367,9 @@ const startServer = (options?: ServerParams): Server => {
     const ADMIN_KEY = options?.admin_key ?? process.env.CHAT_ADMIN_KEY ?? "your_api_key";
     const SERVER_PORT = options?.port ?? parseInt(process.env.CHAT_SERVER_PORT ?? "8080");
     const SERVER_URL = options?.url ?? process.env.CHAT_SERVER_URL ?? `http://localhost`;
-
-    setupRoutes(SERVER_URL, +SERVER_PORT, ADMIN_KEY);
+    const setDashRoute = options?.setDefaultRoute ?? false;
+    
+    setupRoutes(SERVER_URL, +SERVER_PORT, ADMIN_KEY, setDashRoute);
 
     const resetLimit = () => {
         log.info("Rate limiter reset");
