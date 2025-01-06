@@ -339,13 +339,6 @@ const setupRoutes = (url: string, port: number, admin_key: string) => {
             });
         }
     );
-
-    app.get("/",
-        (c) => {
-            log.debug("Root page request");
-            return c.html("Hello to Sloppy Chat. Click here for <a href='/docs'> API </a>.");
-        }
-    );
 }
 
 //  --------------------------------------------------------

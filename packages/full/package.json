@@ -12,8 +12,8 @@
         "url": "git+https://github.com/duck4i/sloppy-chat.git"
     },
     "scripts": {
-        "start": "bun run ./src/index.ts",
-        "dev": "bun run --watch ./src/index.ts",
+        "start": "bun run ./src/run.ts",
+        "dev": "bun run --watch ./src/run.ts",
         "build": "rm -rf *.tsbuildinfo && tsc",
         "clean": "rm -rf *.tsbuildinfo && rm -rf dist && rm -rf node_modules",
         "test": "echo \"No tests yet\"",
