@@ -1,0 +1,1 @@
+bun build ./html/chat_client.ts --target browser --outfile ./html/chat_client.js

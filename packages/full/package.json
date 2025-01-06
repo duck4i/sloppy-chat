@@ -1,6 +1,6 @@
 {
-    "name": "@duck4i/sloppy-chat-server",
-    "version": "0.2.9",
+    "name": "@duck4i/sloppy-chat-full",
+    "version": "0.2.12",
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -12,24 +12,31 @@
         "url": "git+https://github.com/duck4i/sloppy-chat.git"
     },
     "scripts": {
-        "build": "rm -rf *.tsbuildinfo && tsc",
+        "start": "bun run ./src/run.ts",
+        "dev": "bun run --watch ./src/run.ts",
+        "build": "rm -rf *.tsbuildinfo && tsc && cp ./src/*.tsx ./dist/",
         "clean": "rm -rf *.tsbuildinfo && rm -rf dist && rm -rf node_modules",
         "test": "echo \"No tests yet\"",
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
+        "@duck4i/sloppy-chat-client": "workspace:*",
         "@duck4i/sloppy-chat-common": "workspace:*",
+        "@duck4i/sloppy-chat-server": "workspace:*",
         "@scalar/hono-api-reference": "^0.5.165",
         "hono": "^4.6.15",
         "hono-openapi": "^0.3.1",
-        "pino": "^9.6.0",
-        "pino-pretty": "^13.0.0",
+        "lucide-react": "^0.469.0",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
         "valibot": "1.0.0-beta.10",
         "zod": "^3.24.1",
         "zod-to-json-schema": "^3.24.1"
     },
     "devDependencies": {
         "@types/bun": "latest",
+        "@types/react": "^19.0.3",
+        "@types/react-dom": "^19.0.2",
         "typescript": "^5.7.2"
     },
     "publishConfig": {

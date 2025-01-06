@@ -65,7 +65,7 @@ export class Client {
         this.socket.onerror = (error) => {
             error.preventDefault();
             if (this.state !== ClientState.Reconnecting && this.state !== ClientState.Connecting)
-                console.error("Connection error", error, this.state);
+                console.error(`Connection error, ${error}, ${this.state}`);
         }
 
         this.socket.onmessage = async (ev) => {
@@ -74,7 +74,7 @@ export class Client {
 
             if (type === MessageType.ACK) {
                 const ack = data as ChatUserConnectedAck;
-                console.debug("Recieved ACK message on connect with ID", ack.userId);
+                console.debug(`Recieved ACK message on connect with ID ${ack.userId}`);
 
                 this.userId = ack.userId;
 
@@ -102,7 +102,7 @@ export class Client {
 
             if (type === MessageType.MSG_RESPONSE) {
                 const msg = data as ChatMessage;
-                console.debug("Chat message recieved from.", msg.userName);
+                console.debug(`Chat message recieved from. ${msg.userName}`);
 
                 if (this.messageCallback) {
                     this.messageCallback(msg.userName, msg.message, msg.userType);
@@ -124,10 +124,12 @@ export class Client {
     }
 
     disconnect() {
+        console.info("Disconnect called.");
         if (this.socket) {
             this.socket.close();
             this.socket = null;
             this.state = ClientState.Disconnected;
+            console.debug(`Disconnect completed.`);
         }
     }
 
@@ -145,7 +147,7 @@ export class Client {
         return true;
     }
 
-    private changeName(newName: string): boolean {
+    changeName(newName: string): boolean {
         if (this.state !== ClientState.InSession || !this.socket) {
             console.warn("Trying to change name without session.");
             return false;

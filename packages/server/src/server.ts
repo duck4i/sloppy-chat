@@ -6,7 +6,7 @@ import type {
     ChatUserNameChange,
     ChatUserNameChangeAck
 } from "@duck4i/sloppy-chat-common";
-import { logger as log, MessageType, MessageUserType } from "@duck4i/sloppy-chat-common";
+import { MessageType, MessageUserType } from "@duck4i/sloppy-chat-common";
 import { apiReference } from "@scalar/hono-api-reference";
 import { serve, type Server, type ServerWebSocket } from "bun";
 import { Hono } from "hono";
@@ -14,6 +14,8 @@ import { describeRoute, openAPISpecs } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/valibot";
 import * as v from 'valibot';
 import { type BotProcessFunction } from "./bots";
+import { createLogger } from "./log";
+
 
 const RATE_LIMIT_MSG_PER_MINUTE = 20;   // 20 messages per minute
 const RATE_LIMIT_RESET_MINUTES = 60;    // resets every hour
@@ -37,6 +39,7 @@ const limiter = new Map<string, number>();
 const bots: BotProcessFunction[] = [];
 
 const app = new Hono();
+const log = createLogger();
 
 const onConnect = (ws: WSocket) => {
 
@@ -118,7 +121,7 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
 
         //  process bots
         for (const processBot of bots) {
-            const botReply = await processBot(ws!, req.message, sentBy.name, req.userId);
+            const botReply = await processBot(req.message, sentBy.name, req.userId);
 
             //  Broadcast to all
             for (const { userId, socket } of clients.values()) {
@@ -165,7 +168,7 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
         }
 
         log.debug(`User ${user?.name} changed name to ${req.newName}`);
-        user.name = isAuthenticated ? req.newName : `${ANON_PREFIX}${req.newName}`;
+        user.name = isAuthenticated ? req.newName : `${req.newName}`;
         clients.set(req.userId, user);
 
         const ack: ChatUserNameChangeAck = {
@@ -181,7 +184,7 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
 //  Web
 //  --------------------------------------------------------
 
-const setupRoutes = (url: string, port: number, admin_key: string) => {
+const setupRoutes = (url: string, port: number, admin_key: string, setDefaultRoute: boolean) => {
     //  Docs and status 
 
     app.get('/openapi',
@@ -337,12 +340,14 @@ const setupRoutes = (url: string, port: number, admin_key: string) => {
         }
     );
 
-    app.get("/",
-        (c) => {
-            log.debug("Root page request");
-            return c.html("Hello to Sloppy Chat. Click here for <a href='/docs'> API </a>.");
-        }
-    );
+    if (setDefaultRoute) {
+        app.get("/",
+            (c) => {
+                log.debug("Root page request");
+                return c.html("Hello to Sloppy Chat. Click here for <a href='/docs'> API </a>.");
+            }
+        );
+    }
 }
 
 //  --------------------------------------------------------
@@ -353,7 +358,7 @@ export interface ServerParams {
     port?: number;
     url?: string;
     admin_key?: string;
-    anon_prefix?: string;
+    setDefaultRoute?: boolean;
 }
 
 const startServer = (options?: ServerParams): Server => {
@@ -362,9 +367,9 @@ const startServer = (options?: ServerParams): Server => {
     const ADMIN_KEY = options?.admin_key ?? process.env.CHAT_ADMIN_KEY ?? "your_api_key";
     const SERVER_PORT = options?.port ?? parseInt(process.env.CHAT_SERVER_PORT ?? "8080");
     const SERVER_URL = options?.url ?? process.env.CHAT_SERVER_URL ?? `http://localhost`;
-    const ANON_PREFIX = options?.anon_prefix ?? process.env.CHAT_ANON_PREFIX ?? "";
-
-    setupRoutes(SERVER_URL, +SERVER_PORT, ADMIN_KEY);
+    const setDashRoute = options?.setDefaultRoute ?? false;
+    
+    setupRoutes(SERVER_URL, +SERVER_PORT, ADMIN_KEY, setDashRoute);
 
     const resetLimit = () => {
         log.info("Rate limiter reset");

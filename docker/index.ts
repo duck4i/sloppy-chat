@@ -1,12 +1,12 @@
-import { bots, startServer, type BotProcessReturn, type BotReply } from "@duck4i/sloppy-chat-server";
+import { bots, startServerWithUI, type BotProcessReturn, type BotReply } from "@duck4i/sloppy-chat-full";
 import type { ServerWebSocket } from "bun";
 
 const addBot = () => {
-    const examplePingBot = async (ws: ServerWebSocket<unknown>, message: string, userName: string, userId: string): BotProcessReturn => {
-        if (message === "!ping") {
+    const examplePingBot = async (message: string, userName: string, userId: string): BotProcessReturn => {
+        if (message === "!slop") {
             const rp: BotReply = {
                 botName: "~SloppyPong~",
-                message: "Pong!",
+                message: "SLOOOP!",
                 onlyToSender: false
             };
             return rp;
@@ -18,4 +18,4 @@ const addBot = () => {
 
 addBot();
 
-const server = startServer();
+const server = startServerWithUI();
