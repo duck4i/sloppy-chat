@@ -1,6 +1,10 @@
 {
   "name": "sloppy-chat-docker",
+  "private": true,
   "module": "index.ts",
+  "scripts": {
+    "start": "bun run index.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
@@ -9,6 +13,6 @@
   },
   "type": "module",
   "dependencies": {
-    "@duck4i/sloppy-chat-full": "^0.2.9"
+    "@duck4i/sloppy-chat-full": "^0.2.10"
   }
 }

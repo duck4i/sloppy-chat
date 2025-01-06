@@ -1,6 +1,6 @@
 {
     "name": "@duck4i/sloppy-chat-full",
-    "version": "0.2.10",
+    "version": "0.2.11",
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -14,7 +14,7 @@
     "scripts": {
         "start": "bun run ./src/run.ts",
         "dev": "bun run --watch ./src/run.ts",
-        "build": "rm -rf *.tsbuildinfo && tsc",
+        "build": "rm -rf *.tsbuildinfo && tsc && cp ./src/chat.tsx ./dist/chat.tsx",
         "clean": "rm -rf *.tsbuildinfo && rm -rf dist && rm -rf node_modules",
         "test": "echo \"No tests yet\"",
         "typecheck": "tsc --noEmit"

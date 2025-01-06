@@ -18,4 +18,4 @@ const addBot = () => {
 
 addBot();
 
-const server = startServer();
+const server = startServerWithUI();
