@@ -1,7 +1,5 @@
-import { app, bots, startServer, type BotProcessReturn, type BotReply } from "@duck4i/sloppy-chat-server";
-import { createLogger } from "@duck4i/sloppy-chat-common";
-
-const log = createLogger({ name: "Full" });
+import { app, bots, startServer, createLogger, type BotProcessReturn, type BotReply } from "@duck4i/sloppy-chat-server";
+const log = createLogger();
 
 const addBot = () => {
     const examplePingBot = async (message: string, userName: string, userId: string): BotProcessReturn => {

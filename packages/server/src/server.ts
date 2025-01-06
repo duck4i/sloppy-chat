@@ -14,6 +14,8 @@ import { describeRoute, openAPISpecs } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/valibot";
 import * as v from 'valibot';
 import { type BotProcessFunction } from "./bots";
+import { createLogger } from "./log";
+
 
 const RATE_LIMIT_MSG_PER_MINUTE = 20;   // 20 messages per minute
 const RATE_LIMIT_RESET_MINUTES = 60;    // resets every hour
@@ -37,7 +39,7 @@ const limiter = new Map<string, number>();
 const bots: BotProcessFunction[] = [];
 
 const app = new Hono();
-const log = createLogger({ name: "Sloppy-Server" });
+const log = createLogger();
 
 const onConnect = (ws: WSocket) => {
 
