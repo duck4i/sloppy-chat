@@ -13,7 +13,7 @@ import { Hono } from "hono";
 import { describeRoute, openAPISpecs } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/valibot";
 import * as v from 'valibot';
-import { type BotProcessFunction } from "./bots";
+import { type BotProcessFunction, type BotReply } from "./bots";
 import { createLogger } from "./log";
 
 
@@ -119,30 +119,35 @@ const onMessage = async (ws: WSocket, message: WMessage) => {
             message: req.message
         }
 
-        //  process bots
+        const botReplies: BotReply[] = [];
+
         for (const processBot of bots) {
             const botReply = await processBot(req.message, sentBy.name, req.userId);
+            if (botReply)
+                botReplies.push(botReply);
+        }
 
-            //  Broadcast to all
-            for (const { userId, socket } of clients.values()) {
-                const senderItself = req.userId === userId;
+        //  Broadcast to all
+        for (const { userId, socket } of clients.values()) {
+            const senderItself = req.userId === userId;
 
-                if (!senderItself) {
-                    socket.send(JSON.stringify(rp)); // no need to return message to sender    
+            if (!senderItself) {
+                socket.send(JSON.stringify(rp)); // no need to return message to sender    
+            }
+
+            //  process bots
+            for (const botReply of botReplies) {
+
+                if (botReply.onlyToSender && !senderItself)
+                    continue;
+
+                const botMsg: ChatMessage = {
+                    type: MessageType.MSG_RESPONSE,
+                    userType: MessageUserType.Bot,
+                    userName: botReply.botName,
+                    message: botReply.message
                 }
-
-                if (botReply) {
-                    if (botReply.onlyToSender && !senderItself)
-                        continue;
-
-                    const botMsg: ChatMessage = {
-                        type: MessageType.MSG_RESPONSE,
-                        userType: MessageUserType.Bot,
-                        userName: botReply.botName,
-                        message: botReply.message
-                    }
-                    socket.send(JSON.stringify(botMsg));
-                }
+                socket.send(JSON.stringify(botMsg));
             }
         }
     }
@@ -368,7 +373,7 @@ const startServer = (options?: ServerParams): Server => {
     const SERVER_PORT = options?.port ?? parseInt(process.env.CHAT_SERVER_PORT ?? "8080");
     const SERVER_URL = options?.url ?? process.env.CHAT_SERVER_URL ?? `http://localhost`;
     const setDashRoute = options?.setDefaultRoute ?? false;
-    
+
     setupRoutes(SERVER_URL, +SERVER_PORT, ADMIN_KEY, setDashRoute);
 
     const resetLimit = () => {
