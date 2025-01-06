@@ -23,6 +23,8 @@ Environment variables:
 * CHAT_SERVER_URL - URL of server without port (defaults to http://localhost) 
 * CHAT_ADMIN_KEY - key string used for server operations like removing users
 
+Docker uses the `@duck4i/sloppy-chat-full` package with a minimal custom built React runner for frontend.
+
 # NPM 
 
 You can consume both client and server inside your own apps.

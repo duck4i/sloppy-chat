@@ -77,8 +77,8 @@ const startServerWithUI = (options?: ServerParams) => {
     return startServer(options);
 }
 
+export * from "@duck4i/sloppy-chat-server";
+
 export {
     startServerWithUI,
-    app,
-    bots
 }
