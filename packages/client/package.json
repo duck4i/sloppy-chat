@@ -1,6 +1,6 @@
 {
     "name": "@duck4i/sloppy-chat-client",
-    "version": "0.2.9",
+    "version": "0.2.10",
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -18,7 +18,7 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
-        "@duck4i/sloppy-chat-common": "workspace:*"
+        "@duck4i/sloppy-chat-common": "workspace:^"
     },
     "publishConfig": {
         "access": "public",
