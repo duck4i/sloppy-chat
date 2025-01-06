@@ -147,7 +147,7 @@ export class Client {
         return true;
     }
 
-    private changeName(newName: string): boolean {
+    changeName(newName: string): boolean {
         if (this.state !== ClientState.InSession || !this.socket) {
             console.warn("Trying to change name without session.");
             return false;

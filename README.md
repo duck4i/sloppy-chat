@@ -10,6 +10,8 @@ Its super simple and designed to be as accessible for editing by community but s
 
 Server and client can be used trough the provided docker image or consumed in another Bun application.
 
+The JS file for client is transpiled and provided as well for creating client UI directly in HTML.
+
 # Docker 
 
 There is published Docker image for the server in case you need it. This project provides a docker-compose setup too.

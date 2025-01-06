@@ -34,7 +34,7 @@ const extendRoutes = () => {
 
         if (res.logs.length > 0)
             log.warn(res.logs);
-        
+
         res.outputs?.map((info) => {
             log.debug(`Compiled: ${info.path}`)
         })
