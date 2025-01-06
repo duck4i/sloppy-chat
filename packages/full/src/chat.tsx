@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Client } from "@duck4i/sloppy-chat-client";
 import { MessageUserType } from "@duck4i/sloppy-chat-common";
 
@@ -14,13 +14,24 @@ export default function Chat() {
     const [name, setName] = useState("");
     const [inputMessage, setInputMessage] = useState("");
     const [nameInput, setNameInput] = useState("");
+    const [isChangingName, setIsChangingName] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const client = useMemo(() => new Client("ws://localhost:8080"), []);
 
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
     useEffect(() => {
-        client.onConnected(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    useEffect(() => {
+        client.onConnected((name) => {
             console.log("Connected.");
             setConnected(true);
+            setName(name);
         });
 
         client.onDisconnected(() => {
@@ -33,6 +44,7 @@ export default function Chat() {
             if (success) {
                 setName(name);
                 setNameInput("");
+                setIsChangingName(false);
             }
         });
 
@@ -69,6 +81,9 @@ export default function Chat() {
         <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
             <div style={{ marginBottom: '20px' }}>
                 <h1>Chat {connected ? '(Connected)' : '(Disconnected)'}</h1>
+                <div style={{gap: 20}}>
+                    <a href="/docs"> Click here for API docs </a>
+                </div>
                 {!name ? (
                     <form onSubmit={handleSetName}>
                         <input
@@ -80,7 +95,30 @@ export default function Chat() {
                         <button type="submit">Set Name</button>
                     </form>
                 ) : (
-                    <p>Hello, {name}!</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {isChangingName ? (
+                            <form onSubmit={handleSetName} style={{ display: 'flex', gap: '10px' }}>
+                                <input
+                                    type="text"
+                                    value={nameInput}
+                                    onChange={(e) => setNameInput(e.target.value)}
+                                    placeholder="Enter new name"
+                                />
+                                <button type="submit">Update Name</button>
+                                <button type="button" onClick={() => {
+                                    setIsChangingName(false);
+                                    setNameInput("");
+                                }}>Cancel</button>
+                            </form>
+                        ) : (
+                            <>
+                                <p>Hello, {name}!</p>
+                                <button onClick={() => setIsChangingName(true)}>
+                                    Change Name
+                                </button>
+                            </>
+                        )}
+                    </div>
                 )}
             </div>
 
@@ -101,7 +139,7 @@ export default function Chat() {
                     >
                         <div style={{
                             display: 'inline-block',
-                            background: msg.userType === 'self' ? '#e3f2fd' : msg.userType === MessageUserType.User ? '#f5f5f5' : `#c3f1ba`,
+                            background: msg.userType === 'self' ? '#e3f2fd' : msg.userType === MessageUserType.User ? '#f5f5f5' : '#c3f1ba',
                             padding: '8px',
                             borderRadius: '5px',
                             maxWidth: '80%'
@@ -111,6 +149,7 @@ export default function Chat() {
                         </div>
                     </div>
                 ))}
+                <div ref={messagesEndRef} />
             </div>
 
             <form onSubmit={handleSendMessage}>

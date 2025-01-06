@@ -59,6 +59,8 @@ const server = startServer(/*{options}*/);
 
 ## Client 
 
+Please note that Client is based on WebSocket meaning its preferable to wrap it in useMemo if you're using react.
+
 ```
 bun install @duck4i/sloppy-chat-client
 ```
