@@ -6,7 +6,7 @@ import type {
     ChatUserNameChange,
     ChatUserNameChangeAck
 } from "@duck4i/sloppy-chat-common";
-import { createLogger, MessageType, MessageUserType } from "@duck4i/sloppy-chat-common";
+import { MessageType, MessageUserType } from "@duck4i/sloppy-chat-common";
 import { apiReference } from "@scalar/hono-api-reference";
 import { serve, type Server, type ServerWebSocket } from "bun";
 import { Hono } from "hono";
