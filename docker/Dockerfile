@@ -11,4 +11,4 @@ EXPOSE $CHAT_SERVER_PORT
 
 RUN bun install
 
-CMD ["bun", "run", "index.ts"]
+CMD ["bun", "start"]
