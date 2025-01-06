@@ -17,6 +17,19 @@ const startServerWithUI = (options?: ServerParams) => {
             return null;
         }
         bots.push(examplePingBot);
+
+        const anotherOne = async (message: string, userName: string, userId: string): BotProcessReturn => {
+            if (message == "!bot"){
+                return {
+                    botName: "TEST",
+                    message: "K",
+                    onlyToSender: false
+                }
+            }
+            return null;
+        }
+        bots.push(anotherOne);
+
         log.info("Bot created");
     }
 

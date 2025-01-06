@@ -1,9 +1,14 @@
 import { bots, startServerWithUI } from "@duck4i/sloppy-chat-full";
 import type { BotProcessFunction, BotProcessReturn, BotReply } from "@duck4i/sloppy-chat-full";
 const { downloadModel, LoadModelAsync, CreateContextAsync, RunInferenceAsync, ReleaseContextAsync, ReleaseModelAsync } = require('@duck4i/llama');
+import { ChatManager, Role } from "./chat";
 import fs from "fs"
 
-const system_prompt = "The following is a conversation with an AI assistant. The assistant is helpful, creative, clever, and very friendly.";
+const system_prompt = "You are an assistant following chat between two individuals and trying to mediate between them, using motherly like words.";
+
+let model: any = null;
+let ctx: any = null;
+const chat = new ChatManager(system_prompt);
 
 const bot = async (message: string, userName: string, userId: string): BotProcessReturn => {
 
@@ -16,10 +21,17 @@ const bot = async (message: string, userName: string, userId: string): BotProces
             );
         }
 
-        const model = await LoadModelAsync("model.gguf");
-        const ctx = await CreateContextAsync(model);
+        if (model === null) {
+            model = await LoadModelAsync("model.gguf");
+            ctx = await CreateContextAsync(model);
+        }
 
-        const inference = await RunInferenceAsync(model, ctx, message.substring(3).trim(), system_prompt);
+        const cleanMessage = `${userName}:${message.substring(4).trim()}`
+        console.log("Mes", cleanMessage);
+        const formatted = chat.getNextPrompt(cleanMessage);
+
+        const inference = await RunInferenceAsync(model, ctx, formatted);
+        chat.addMessage(Role.ASSISTANT, inference);
 
         const repl: BotReply = {
             botName: "QWEN",
@@ -27,15 +39,12 @@ const bot = async (message: string, userName: string, userId: string): BotProces
             onlyToSender: false
         }
 
-        await ReleaseContextAsync(ctx);
-        await ReleaseModelAsync(model);
-
         return repl;
     }
 
     return null;
 }
 
-bots.push(bot);
+//bots.push(bot);
 
 const server = startServerWithUI();
