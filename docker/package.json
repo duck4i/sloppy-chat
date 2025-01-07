@@ -12,7 +12,11 @@
     "typescript": "^5.7.2"
   },
   "type": "module",
+  "trustedDependencies": [
+    "@duck4i/llama"
+  ],
   "dependencies": {
+    "@duck4i/llama": "^0.2.3",
     "@duck4i/sloppy-chat-full": "^0.2.14"
   }
 }
