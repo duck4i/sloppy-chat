@@ -1,6 +1,6 @@
 FROM oven/bun:latest
 
-WORKDIR /
+WORKDIR /app
 COPY . .
 
 RUN apt-get update 
