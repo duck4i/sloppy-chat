@@ -13,7 +13,7 @@
   },
   "type": "module",
   "dependencies": {
-    "@duck4i/llama": "^0.1.8",
+    "@duck4i/llama": "^0.2.3",
     "@duck4i/sloppy-chat-full": "^0.2.14"
   }
 }
